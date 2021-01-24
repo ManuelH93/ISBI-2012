@@ -33,16 +33,14 @@ random.seed(SEED)
 
 def img2tensor(img,dtype:np.dtype=np.float32):
     img = torch.from_numpy(img.astype(dtype, copy=False))
-    # Add dimension as tensor needs channel dimension (in this case 1)
-    img = torch.unsqueeze(img,0)
     return img
 
-def crop_mask(mask):
+def crop(image):
     target_size = 388
     tensor_size = 572
     delta = tensor_size - target_size
     delta = delta // 2
-    return mask[:, delta:tensor_size-delta, delta:tensor_size-delta]
+    return image[delta:tensor_size-delta, delta:tensor_size-delta]
 
 class IsbiDataset(torch.utils.data.Dataset):
     def __init__(self, ids):
@@ -56,7 +54,8 @@ class IsbiDataset(torch.utils.data.Dataset):
         img = cv2.imread(os.path.join(TRAIN,fname), cv2.IMREAD_GRAYSCALE)
         mask = cv2.imread(os.path.join(MASKS,fname),cv2.IMREAD_GRAYSCALE)
         img, mask = img2tensor((img/255.0 - mean)/std),img2tensor(mask/255.0)
-        mask = crop_mask(mask)
+        img = torch.unsqueeze(img,0)
+        mask = crop(mask)
         return img, mask
 
 ######################################################################
@@ -176,7 +175,6 @@ class UNet(nn.Module):
     def forward(self, image):
         # batch size, channel, hight, width
         # encoder
-        print(image.shape)
         x1 = self.down_conv_1(image) #
         x2 = self.max_pool_2x2(x1)
         x3 = self.down_conv_2(x2) #
@@ -186,7 +184,6 @@ class UNet(nn.Module):
         x7 = self.down_conv_4(x6) #
         x8 = self.max_pool_2x2(x7)
         x9 = self.down_conv_5(x8)
-        print(x9.size())
         
         # decoder
         x = self.up_trans_1(x9)
@@ -215,25 +212,23 @@ class UNet(nn.Module):
 
 def train_model(train_dl, model):
     # define the optimization
-    criterion = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.99)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.RMSprop(model.parameters(), lr=0.01, momentum=0.99)
     # enumerate epochs
-    for epoch in range(100):
+    # //MH: Change epchs once model is working
+    for epoch in range(1):
         # enumerate mini batches
         for i, (inputs, targets) in enumerate(train_dl):
             # clear the gradients
             optimizer.zero_grad()
             # compute the model output
             yhat = model(inputs)
-            print('test1')
-            print(yhat.size())
-            print(targets.size())
+            # target needs to be in long format
+            targets = targets.type(torch.LongTensor)
             # calculate loss
             loss = criterion(yhat, targets)
-            print('test2')
             # credit assignment
             loss.backward()
-            print('test3')
             # update model weights
             optimizer.step()
 
