@@ -10,6 +10,7 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
+from tqdm import tqdm
 
 ######################################################################
 # Set parameters
@@ -239,27 +240,28 @@ def train_model(train_dl, model):
 ######################################################################
 
 def evaluate_model(eval_dl, model):
-    predictions, actuals = list(), list()
-    for i, (inputs, targets) in enumerate(eval_dl):
-        # evaluate the model on the test set
-        yhat = model(inputs)
-        # retrieve numpy array
-        yhat = yhat.detach().numpy()
-        print(yhat.shape)
-        print(yhat)
-        actual = targets.numpy()
-        print(actual.shape)
-        print(actual)
-        actual = actual.reshape((len(actual), 1))
-        # round to class values
-        yhat = yhat.round()
-        # store
-        predictions.append(yhat)
-        actuals.append(actual)
-    predictions, actuals = np.vstack(predictions), np.vstack(actuals)
-    # calculate accuracy
-    acc = accuracy_score(actuals, predictions)
-    return acc
+    """Evaluation without the densecrf with the dice coefficient"""
+    model.eval()
+    mask_type = torch.long
+    n_val = len(eval_dl)  # the number of batch
+    tot = 0
+
+    with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
+        #for batch in eval_dl:
+        for i, (imgs, true_masks) in enumerate(eval_dl):
+
+            imgs = imgs.to(dtype=torch.float32)
+            true_masks = true_masks.to(dtype=mask_type)
+
+            with torch.no_grad():
+                mask_pred = model(imgs)
+
+         
+            tot += nn.functional.cross_entropy(mask_pred, true_masks).item()
+            pbar.update()
+
+    model.train()
+    return tot / n_val
 
 ######################################################################
 # Main
