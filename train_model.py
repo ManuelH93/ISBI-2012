@@ -32,10 +32,6 @@ random.seed(SEED)
 # Define Dataset
 ######################################################################
 
-def img2tensor(img,dtype:np.dtype=np.float32):
-    img = torch.from_numpy(img.astype(dtype, copy=False))
-    return img
-
 def crop(image):
     target_size = 388
     tensor_size = 572
@@ -53,10 +49,15 @@ class IsbiDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         fname = self.fnames[idx]
         img = cv2.imread(os.path.join(TRAIN,fname), cv2.IMREAD_GRAYSCALE)
-        mask = cv2.imread(os.path.join(MASKS,fname),cv2.IMREAD_GRAYSCALE)
-        img, mask = img2tensor((img/255.0 - mean)/std),img2tensor(mask/255.0)
+        img = (img/255.0 - mean)/std
+        img = torch.from_numpy(img.astype(np.float32, copy=False))
+        # Need to add channel dimension
         img = torch.unsqueeze(img,0)
+        mask = cv2.imread(os.path.join(MASKS,fname),cv2.IMREAD_GRAYSCALE)
+        mask = mask/255.0
         mask = crop(mask)
+        mask = torch.from_numpy(mask.astype(np.int64, copy=False))
+        
         return img, mask
 
 ######################################################################
@@ -225,8 +226,6 @@ def train_model(train_dl, model):
             optimizer.zero_grad()
             # compute the model output
             yhat = model(inputs)
-            # target needs to be in long format
-            targets = targets.type(torch.LongTensor)
             # calculate loss
             loss = criterion(yhat, targets)
             # credit assignment
@@ -261,7 +260,7 @@ def evaluate_model(eval_dl, model):
 
 def predict(image, model):
     # convert image to data
-    image = img2tensor((image/255.0 - mean)/std)
+    #image = img2tensor((image/255.0 - mean)/std)
     image = torch.unsqueeze(image,0)
     image = torch.unsqueeze(image,0)
     # make prediction
