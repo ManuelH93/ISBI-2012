@@ -4,6 +4,7 @@
 
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 import random
 import numpy as np
 import os
@@ -26,7 +27,7 @@ std = np.array([1])
 # Set random seeds
 ######################################################################
 
-random.seed(SEED)
+#random.seed(SEED)
 
 ######################################################################
 # Define Dataset
@@ -210,49 +211,72 @@ class UNet(nn.Module):
         return(x)
 
 ######################################################################
-# Train the model
+# Train and evaluate the model
 ######################################################################
 
-def train_model(train_dl, model):
+def get_loss(dl, model):
+    criterion = torch.nn.functional.cross_entropy
+    loss = 0
+    for X, y in dl:
+        if torch.cuda.is_available():
+            X, y = Variable(X).cuda(), Variable(y).cuda()
+        else:
+            X, y = Variable(X), Variable(y)
+        output = model(X)
+        loss += criterion(output, y).item()
+    loss = loss / len(dl)
+    return loss
+
+def train_model(train_dl, val_dl, model):
     # define the optimization
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=0.01, momentum=0.99)
-    # enumerate epochs
-    # //MH: Change epchs once model is working
+    optim = torch.optim.Adam(model.parameters(), lr=0.01)
+    criterion = torch.nn.functional.cross_entropy
+    
+    iters = []
+    train_losses = []
+    val_losses = []
+
+    it = 0
+    min_loss = np.inf
+
+    #os.makedirs(os.path.dirname(bst_model_fpath), exist_ok=True)
+
+    model.train()
     for epoch in range(1):
-        # enumerate mini batches
-        for i, (inputs, targets) in enumerate(train_dl):
-            # clear the gradients
-            optimizer.zero_grad()
-            # compute the model output
-            yhat = model(inputs)
-            # calculate loss
-            loss = criterion(yhat, targets)
-            # credit assignment
+        for i, (X, y) in enumerate(train_dl):
+            
+            if torch.cuda.is_available():
+                X = Variable(X).cuda()  # [N, 1, H, W]
+                y = Variable(y).cuda()  # [N, H, W] with class indices (0, 1)
+            else:
+                X = Variable(X)  # [N, 1, H, W]
+                y = Variable(y)
+            output = model(X)  # [N, 2, H, W]
+            loss = criterion(output, y)
+
+            optim.zero_grad()
             loss.backward()
-            # update model weights
-            optimizer.step()
+            optim.step()
 
-######################################################################
-# Evaluate the model
-######################################################################
+            it += 1
+            iters.append(it)
+            train_losses.append(loss.item())
 
-def evaluate_model(eval_dl, model):
-    mask_type = torch.long
-    n_val = len(eval_dl)  # the number of batch
-    tot = 0
+            model.eval()
+            val_loss = get_loss(val_dl, model)
+            model.train()
+            val_losses.append(val_loss)
 
-    for i, (imgs, true_masks) in enumerate(eval_dl):
+            if val_loss < min_loss:
+                torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
 
-        imgs = imgs.to(dtype=torch.float32)
-        true_masks = true_masks.to(dtype=mask_type)
+    model.eval()
+    print('evaluation')
+    val_loss = get_loss(val_dl, model)
+    if val_loss < min_loss:
+        torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
 
-        with torch.no_grad():
-            mask_pred = model(imgs)
-
-        tot += nn.functional.cross_entropy(mask_pred, true_masks).item()
-
-    return tot / n_val
+    return iters, train_losses, val_losses
 
 ######################################################################
 # Make a prediction
@@ -273,15 +297,24 @@ def predict(image, model):
 # Main
 ######################################################################
 
-train_dl, eval_dl = prepare_data()
-#print(len(train_dl.dataset), len(eval_dl.dataset))
+train_dl, val_dl = prepare_data()
+print(len(train_dl.dataset), len(val_dl.dataset))
 # define the network
-#model = UNet()
+model = UNet()
+if torch.cuda.is_available():
+    model.cuda()
 # train the model
-#train_model(train_dl, model)
+iters, train_losses, val_losses = train_model(train_dl, val_dl, model)
 # evaluate the model
-#acc = evaluate_model(eval_dl, model)
-#print(f'Accuracy: {acc}')
+print(iters)
+print(train_losses)
+print(val_losses)
+plt.plot(iters, train_losses)
+plt.plot(iters, val_losses)
+plt.savefig(os.path.join(OUTPUT,'evaluation.png'))
+plt.clf()
+
+
 # make a single prediction (expect class=1)
 #image = cv2.imread(os.path.join(TEST, 'image_7.png'), cv2.IMREAD_GRAYSCALE)
 #mask_pred = predict(image, model)
