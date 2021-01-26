@@ -9,8 +9,6 @@ import numpy as np
 import os
 import cv2
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score
-from tqdm import tqdm
 
 ######################################################################
 # Set parameters
@@ -20,6 +18,7 @@ SEED = 2021
 OUTPUT = 'output'
 TRAIN = os.path.join(OUTPUT,'train')
 MASKS = os.path.join(OUTPUT,'mask')
+TEST = os.path.join(OUTPUT,'test')
 mean = np.array([0])
 std = np.array([1])
 
@@ -240,28 +239,36 @@ def train_model(train_dl, model):
 ######################################################################
 
 def evaluate_model(eval_dl, model):
-    """Evaluation without the densecrf with the dice coefficient"""
-    model.eval()
     mask_type = torch.long
     n_val = len(eval_dl)  # the number of batch
     tot = 0
 
-    with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
-        #for batch in eval_dl:
-        for i, (imgs, true_masks) in enumerate(eval_dl):
+    for i, (imgs, true_masks) in enumerate(eval_dl):
 
-            imgs = imgs.to(dtype=torch.float32)
-            true_masks = true_masks.to(dtype=mask_type)
+        imgs = imgs.to(dtype=torch.float32)
+        true_masks = true_masks.to(dtype=mask_type)
 
-            with torch.no_grad():
-                mask_pred = model(imgs)
+        with torch.no_grad():
+            mask_pred = model(imgs)
 
-         
-            tot += nn.functional.cross_entropy(mask_pred, true_masks).item()
-            pbar.update()
+        tot += nn.functional.cross_entropy(mask_pred, true_masks).item()
 
-    model.train()
     return tot / n_val
+
+######################################################################
+# Make a prediction
+######################################################################
+
+def predict(image, model):
+    # convert image to data
+    image = img2tensor((image/255.0 - mean)/std)
+    image = torch.unsqueeze(image,0)
+    image = torch.unsqueeze(image,0)
+    # make prediction
+    mask_pred = model(image)
+    # retrieve numpy array
+    mask_pred = mask_pred.detach().numpy()
+    return mask_pred
 
 ######################################################################
 # Main
@@ -270,13 +277,21 @@ def evaluate_model(eval_dl, model):
 train_dl, eval_dl = prepare_data()
 #print(len(train_dl.dataset), len(eval_dl.dataset))
 # define the network
-model = UNet()
+#model = UNet()
 # train the model
-train_model(train_dl, model)
+#train_model(train_dl, model)
 # evaluate the model
-acc = evaluate_model(eval_dl, model)
-print('Accuracy: %.3f' % acc)
+#acc = evaluate_model(eval_dl, model)
+#print(f'Accuracy: {acc}')
 # make a single prediction (expect class=1)
-#row = [1,0,0.99539,-0.05889,0.85243,0.02306,0.83398,-0.37708,1,0.03760,0.85243,-0.17755,0.59755,-0.44945,0.60536,-0.38223,0.84356,-0.38542,0.58212,-0.32192,0.56971,-0.29674,0.36946,-0.47357,0.56811,-0.51171,0.41078,-0.46168,0.21266,-0.34090,0.42267,-0.54487,0.18641,-0.45300]
-#yhat = predict(row, model)
+#image = cv2.imread(os.path.join(TEST, 'image_7.png'), cv2.IMREAD_GRAYSCALE)
+#mask_pred = predict(image, model)
+#print(mask_pred)
+#image = crop(image)
+#plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
+#plt.imshow(mask_pred, cmap="hot", alpha=0.5)
+#plt.savefig(os.path.join(OUTPUT,'prediction.png'))
+#plt.clf()
+
+
 #print('Predicted: %.3f (class=%d)' % (yhat, yhat.round()))
