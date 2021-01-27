@@ -27,7 +27,11 @@ std = np.array([1])
 # Set random seeds
 ######################################################################
 
-#random.seed(SEED)
+random.seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+else:
+    torch.manual_seed(SEED)
 
 ######################################################################
 # Define Dataset
@@ -69,32 +73,34 @@ def prepare_data():
 
     # Determine train and test images
 
-    ids = np.array([f'image_{i}' for i in range(1,31)])
-    random.shuffle(ids)
+    #ids = np.array([f'image_{i}' for i in range(1,31)])
+    #random.shuffle(ids)
     # //MH update train/val split
-    cut_off = int(len(ids)*0.5)
-    train = ids[:cut_off]
-    val = ids[cut_off:]
+    #cut_off = int(len(ids)*0.8)
+    #train = ids[:cut_off]
+    #val = ids[cut_off:]
+
+    train = np.array(['image_2'])
+    val = np.array(['image_16'])
 
     # Test if dataset is loading images as expected
-
-    ds = IsbiDataset(train)
-    dl = torch.utils.data.DataLoader(ds,batch_size=25,shuffle=False)
-    imgs,masks = next(iter(dl))
-    fig=plt.figure(figsize=(24, 20))
-    for ind, (image, mask) in enumerate(zip(imgs, masks)):
-        fig.add_subplot(5, 5, 1+ind)
-        plt.axis('off')
-        # Remove channel dimension
-        image = torch.squeeze(image)
-        # Crop image to fit mask
-        image = crop(image)
-        plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
-        plt.imshow(mask, cmap="hot", alpha=0.5)
-    plt.savefig(os.path.join(OUTPUT,'train_dataset.png'))
-    plt.clf()
+    #ds = IsbiDataset(train)
+    #dl = torch.utils.data.DataLoader(ds,batch_size=25,shuffle=False)
+    #imgs,masks = next(iter(dl))
+    #fig=plt.figure(figsize=(24, 20))
+    #for ind, (image, mask) in enumerate(zip(imgs, masks)):
+    #    fig.add_subplot(5, 5, 1+ind)
+    #    plt.axis('off')
+    #    # Remove channel dimension
+    #    image = torch.squeeze(image)
+    #    # Crop image to fit mask
+    #    image = crop(image)
+    #    plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
+    #    plt.imshow(mask, cmap="hot", alpha=0.5)
+    #plt.savefig(os.path.join(OUTPUT,'train_dataset.png'))
+    #plt.clf()
         
-    del ds,dl,imgs,masks
+    #del ds,dl,imgs,masks
 
     # Create a dataloader for train and validation set
 
@@ -238,13 +244,10 @@ def train_model(train_dl, val_dl, model):
 
     it = 0
     min_loss = np.inf
-
-    #os.makedirs(os.path.dirname(bst_model_fpath), exist_ok=True)
-
     model.train()
     for epoch in range(1):
+        print(f'epoch: {epoch}')
         for i, (X, y) in enumerate(train_dl):
-            
             if torch.cuda.is_available():
                 X = Variable(X).cuda()  # [N, 1, H, W]
                 y = Variable(y).cuda()  # [N, H, W] with class indices (0, 1)
@@ -261,37 +264,43 @@ def train_model(train_dl, val_dl, model):
             it += 1
             iters.append(it)
             train_losses.append(loss.item())
-
             model.eval()
+            # Get's average loss on validation data
             val_loss = get_loss(val_dl, model)
             model.train()
             val_losses.append(val_loss)
 
             if val_loss < min_loss:
                 torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
+                min_loss = val_loss
+            print(f'min_loss: {min_loss}')
 
     model.eval()
-    print('evaluation')
     val_loss = get_loss(val_dl, model)
     if val_loss < min_loss:
         torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
-
     return iters, train_losses, val_losses
 
 ######################################################################
 # Make a prediction
 ######################################################################
 
-def predict(image, model):
-    # convert image to data
-    #image = img2tensor((image/255.0 - mean)/std)
-    image = torch.unsqueeze(image,0)
-    image = torch.unsqueeze(image,0)
-    # make prediction
-    mask_pred = model(image)
-    # retrieve numpy array
-    mask_pred = mask_pred.detach().numpy()
-    return mask_pred
+def predict(fname, model):
+    img = cv2.imread(os.path.join(TEST,fname), cv2.IMREAD_GRAYSCALE)
+    img = (img/255.0 - mean)/std
+    img = torch.from_numpy(img.astype(np.float32, copy=False))
+    
+    if torch.cuda.is_available():
+        img = Variable(img).cuda()
+    else:
+        img = Variable(img)
+    
+    img = torch.unsqueeze(img,0)
+    img = torch.unsqueeze(img,0)
+    model.eval()
+    output = model(img)
+
+    return img, output
 
 ######################################################################
 # Main
@@ -315,15 +324,16 @@ plt.savefig(os.path.join(OUTPUT,'evaluation.png'))
 plt.clf()
 
 
-# make a single prediction (expect class=1)
-#image = cv2.imread(os.path.join(TEST, 'image_7.png'), cv2.IMREAD_GRAYSCALE)
-#mask_pred = predict(image, model)
-#print(mask_pred)
+#make a single prediction
+image, mask_pred = predict('image_7.png', model)
+print('marker1')
+print(type(mask_pred))
+print('marker2')
+print(mask_pred.size())
+print(mask_pred)
 #image = crop(image)
-#plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
 #plt.imshow(mask_pred, cmap="hot", alpha=0.5)
+#plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
 #plt.savefig(os.path.join(OUTPUT,'prediction.png'))
 #plt.clf()
 
-
-#print('Predicted: %.3f (class=%d)' % (yhat, yhat.round()))
