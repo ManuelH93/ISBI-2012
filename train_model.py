@@ -61,6 +61,8 @@ class IsbiDataset(torch.utils.data.Dataset):
         mask = cv2.imread(os.path.join(MASKS,fname),cv2.IMREAD_GRAYSCALE)
         mask = mask/255.0
         mask = crop(mask)
+        # Target needs to be in long format
+        # https://discuss.pytorch.org/t/multiclass-segmentation/54065/2
         mask = torch.from_numpy(mask.astype(np.int64, copy=False))
         
         return img, mask
@@ -275,10 +277,10 @@ def train_model(train_dl, val_dl, model):
                 min_loss = val_loss
             print(f'min_loss: {min_loss}')
 
-    model.eval()
-    val_loss = get_loss(val_dl, model)
-    if val_loss < min_loss:
-        torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
+    #model.eval()
+    #val_loss = get_loss(val_dl, model)
+    #if val_loss < min_loss:
+    #    torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
     return iters, train_losses, val_losses
 
 ######################################################################
@@ -299,8 +301,21 @@ def predict(fname, model):
     img = torch.unsqueeze(img,0)
     model.eval()
     output = model(img)
+    output = torch.softmax(output,dim=1)
+    output = torch.squeeze(output)
+    output = output.data.cpu().numpy()
+    channels, height, width = output.shape
+    mask_pred = np.ones((height, width), dtype=np.float32) * 255
+    for y in range(height):
+        for x in range(width):
+            if output[1,y,x] >= 0.5:
+                mask_pred[y,x] = 1
+            else:
+                mask_pred[y,x] = 0
 
-    return img, output
+    img = torch.squeeze(img)
+    img = crop(img)
+    return img, mask_pred
 
 ######################################################################
 # Main
@@ -326,14 +341,9 @@ plt.clf()
 
 #make a single prediction
 image, mask_pred = predict('image_7.png', model)
-print('marker1')
-print(type(mask_pred))
-print('marker2')
-print(mask_pred.size())
-print(mask_pred)
-#image = crop(image)
-#plt.imshow(mask_pred, cmap="hot", alpha=0.5)
-#plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
-#plt.savefig(os.path.join(OUTPUT,'prediction.png'))
-#plt.clf()
-
+fig=plt.figure(figsize=(24, 20))
+plt.axis('off')
+plt.imshow(mask_pred, cmap="hot", alpha=0.5)
+plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
+plt.savefig(os.path.join(OUTPUT,'prediction.png'))
+plt.clf()
