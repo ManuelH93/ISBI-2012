@@ -276,11 +276,7 @@ def train_model(train_dl, val_dl, model):
                 torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
                 min_loss = val_loss
             print(f'min_loss: {min_loss}')
-
-    #model.eval()
-    #val_loss = get_loss(val_dl, model)
-    #if val_loss < min_loss:
-    #    torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
+            
     return iters, train_losses, val_losses
 
 ######################################################################
