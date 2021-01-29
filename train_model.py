@@ -75,15 +75,14 @@ def prepare_data():
 
     # Determine train and test images
 
-    #ids = np.array([f'image_{i}' for i in range(1,31)])
-    #random.shuffle(ids)
-    # //MH update train/val split
-    #cut_off = int(len(ids)*0.8)
-    #train = ids[:cut_off]
-    #val = ids[cut_off:]
+    ids = np.array([f'image_{i}' for i in range(1,31)])
+    random.shuffle(ids)
+    cut_off = int(len(ids)*0.8)
+    train = ids[:cut_off]
+    val = ids[cut_off:]
 
-    train = np.array(['image_2'])
-    val = np.array(['image_16'])
+    #train = np.array(['image_2'])
+    #val = np.array(['image_16'])
 
     # Test if dataset is loading images as expected
     #ds = IsbiDataset(train)
@@ -93,12 +92,12 @@ def prepare_data():
     #for ind, (image, mask) in enumerate(zip(imgs, masks)):
     #    fig.add_subplot(5, 5, 1+ind)
     #    plt.axis('off')
-    #    # Remove channel dimension
+        # Remove channel dimension
     #    image = torch.squeeze(image)
-    #    # Crop image to fit mask
+        # Crop image to fit mask
     #    image = crop(image)
     #    plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
-    #    plt.imshow(mask, cmap="hot", alpha=0.5)
+    #    plt.imshow(mask, cmap ='hot', alpha=0.5)
     #plt.savefig(os.path.join(OUTPUT,'train_dataset.png'))
     #plt.clf()
         
@@ -247,7 +246,7 @@ def train_model(train_dl, val_dl, model):
     it = 0
     min_loss = np.inf
     model.train()
-    for epoch in range(1):
+    for epoch in range(10):
         print(f'epoch: {epoch}')
         for i, (X, y) in enumerate(train_dl):
             if torch.cuda.is_available():
@@ -276,7 +275,7 @@ def train_model(train_dl, val_dl, model):
                 torch.save(model.state_dict(), os.path.join(OUTPUT,'bst_unet.model'))
                 min_loss = val_loss
             print(f'min_loss: {min_loss}')
-            
+
     return iters, train_losses, val_losses
 
 ######################################################################
@@ -334,12 +333,27 @@ plt.plot(iters, val_losses)
 plt.savefig(os.path.join(OUTPUT,'evaluation.png'))
 plt.clf()
 
+# Load model
+#model.load_state_dict(torch.load(os.path.join(OUTPUT,'bst_unet.model')))
+
 
 #make a single prediction
 image, mask_pred = predict('image_7.png', model)
 fig=plt.figure(figsize=(24, 20))
 plt.axis('off')
+plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
+plt.savefig(os.path.join(OUTPUT,'image.png'))
+plt.clf()
+
+fig=plt.figure(figsize=(24, 20))
+plt.axis('off')
+plt.imshow(mask_pred, cmap="hot", alpha=0.5)
+plt.savefig(os.path.join(OUTPUT,'mask.png'))
+plt.clf()
+
+fig=plt.figure(figsize=(24, 20))
+plt.axis('off')
 plt.imshow(mask_pred, cmap="hot", alpha=0.5)
 plt.imshow(image*255, cmap='gray', vmin=0, vmax=255)
-plt.savefig(os.path.join(OUTPUT,'prediction.png'))
+plt.savefig(os.path.join(OUTPUT,'image_mask.png'))
 plt.clf()
