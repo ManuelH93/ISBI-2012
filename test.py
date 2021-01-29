@@ -3,46 +3,97 @@
 ######################################################################
 
 import torch
-import torch.nn as nn
-import random
 import numpy as np
-import os
-import cv2
-import matplotlib.pyplot as plt
+from skimage.morphology import binary_opening, disk, label
+from PIL import Image
 
-OUTPUT = 'output'
-MASKS = os.path.join(OUTPUT,'mask')
+torch.manual_seed(2021)
+r1 = -1
+r2 = 1
 
+pred = (r1 - r2) * torch.rand((1, 2, 2, 2)) + r2
 
-def img2tensor(img,dtype:np.dtype=np.float32):
-    img = torch.from_numpy(img.astype(dtype, copy=False))
-    return img
+print('mask1')
+print(pred)
 
-def crop(image):
-    target_size = 388
-    tensor_size = 572
-    delta = tensor_size - target_size
-    delta = delta // 2
-    return image[delta:tensor_size-delta, delta:tensor_size-delta]
+pred = torch.softmax(pred,dim=1)
+pred = pred.data.cpu().numpy()
 
+for masks in pred:
+    channels, height, width = masks.shape
+    colorimg = np.ones((height, width), dtype=np.float32) * 255
+    for y in range(height):
+        for x in range(width):
+            if masks[1,y,x] >= 0.5:
+                colorimg[y,x] = 1
+            else:
+                colorimg[y,x] = 0
 
+print('colorimg')
+print(colorimg)
 
-mask = cv2.imread(os.path.join(MASKS,'image_1.png'),cv2.IMREAD_GRAYSCALE)
-print(type(mask))
-#mask = img2tensor(mask/255)
-mask = torch.from_numpy(np.array(mask/255, dtype=np.int64))
-print(type(mask))
-mask = crop(mask)
-print(type(mask))
+#print('##########################')
+#print('# GitHub')
+#print('##########################')
 
-print('test')
-del mask
-mask = np.zeros([512,512], dtype=np.uint8)
-print(type(mask))
-mask = np.clip(mask, 0, 1)
-print(type(mask))
-#mask = Image.fromarray(mask)
-#print(type(mask))
-mask = torch.from_numpy(np.array(mask, dtype=np.int64))
-print(type(mask))
-print(torch.__version__)
+#pred = (r1 - r2) * torch.rand((1, 6, 2, 2)) + r2
+
+#print('mask1')
+#print(pred)
+
+#pred = torch.sigmoid(pred)
+#pred = pred.data.cpu().numpy()
+
+#for masks in pred:
+#    colors = np.asarray([(201, 58, 64), (242, 207, 1), (0, 152, 75), (101, 172, 228),(56, 34, 132), (160, 194, 56)])
+#    channels, height, width = masks.shape
+#    print(masks.shape)
+#    colorimg = np.ones((height, width, 3), dtype=np.float32) * 255
+#    print('masks')
+#    print(masks)
+#    print('colorimg')
+#    print(colorimg)
+    
+
+#    for y in range(height):
+#        for x in range(width):
+#            print('masks[:,y,x]')
+#            print(masks[:,y,x])
+#            print('masks[:,y,x] > 0.5')
+#            print(masks[:,y,x] > 0.5)
+#            print('colors[masks[:,y,x] > 0.5]')
+#            print(colors[masks[:,y,x] > 0.5])
+#            selected_colors = colors[masks[:,y,x] > 0.5]
+
+#            if len(selected_colors) > 0:
+#                colorimg[y,x,:] = np.mean(selected_colors, axis=0)
+#print('colorimg')
+#print(colorimg)
+
+# Change channel-order and make 3 channels for matplot
+#input_images_rgb = [reverse_transform(x) for x in inputs.cpu()]
+
+# Map each channel (i.e. class) to each color
+#target_masks_rgb = [helper.masks_to_colorimg(x) for x in labels.cpu().numpy()]
+#pred_rgb = [helper.masks_to_colorimg(x) for x in pred
+
+##########################
+# Kaggle
+##########################
+
+#mask = torch.rand((1, 2, 5, 5))
+#print('mask1')
+#print(mask)
+#mask = mask[0, 0]
+#print('mask2')
+#print(mask)
+#mask = torch.sigmoid(mask).data.cpu().numpy()
+#print('mask3')
+#print(mask)
+#mask = binary_opening(mask > 0.5)
+#print(mask)
+#print('mask4')
+#mask = Image.fromarray(mask.astype(np.uint8))
+#print('mask5')
+#print(mask)
+#mask = np.array(mask).astype(np.bool)
