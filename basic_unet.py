@@ -4,9 +4,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import helper
 import simulation
+import random
 
+###########################################################
+# Define parameters
+###########################################################
+
+DATA = 'raw_data'
+random.seed(2021)
+
+
+# Load data
+imgs_train, masks, imgs_test = simulation.load_data(DATA)
 # Generate some random images
-input_images, target_masks = simulation.generate_random_data(192, 192, count=3)
+input_images, target_masks = simulation.reshape_images(imgs_train, masks, count=3)
 
 for x in [input_images, target_masks]:
     print(x.shape)
