@@ -4,12 +4,17 @@ import tifffile as tiff
 import os
 import albumentations as A
 import cv2
+import random
+
 
 # Define parameters
 
 DATA = 'raw_data'
 OUTPUT = 'output'
+random.seed(2021)
+count = 3
 
+def load_data(directory)
 # Read in images and masks
 
 imgs = tiff.imread(os.path.join(DATA,'train-volume.tif'))
@@ -20,21 +25,8 @@ masks = tiff.imread(os.path.join(DATA,'train-labels.tif'))
 masks = masks.transpose(1,2,0)
 masks = np.squeeze(np.dsplit(masks, 30))
 masks = masks / 255
+# //MH maybe turn mask into integer
 
-print(imgs.shape)
-print(masks.shape)
-
-plt.imshow(imgs[0])
-plt.show()
-plt.clf()
-
-
-plt.imshow(masks[0])
-plt.show()
-plt.clf()
-
-image = imgs[0]
-mask = masks[0]
 
 def get_aug(p=1.0):
     return A.Compose([
@@ -55,24 +47,31 @@ def get_aug(p=1.0):
         ], p=0.3),
     ], p=p)
 
-tfms = get_aug()
-augmented = tfms(image=image, mask=mask)
-image, mask = augmented['image'],augmented['mask']
+def aug_image(imgs, masks):
+    random_number = random.randint(0,29)
+    image = imgs[random_number]
+    mask = masks[random_number]
+    tfms = get_aug()
+    augmented = tfms(image=image, mask=mask)
+    image, mask = augmented['image'],augmented['mask']
+    return image, mask
 
-plt.imshow(image)
-plt.show()
-plt.clf()
+input_images, target_masks = zip(*[aug_image(imgs, masks) for i in range(0, count)])
+input_images = np.asarray(input_images)
+target_masks = np.asarray(target_masks)
 
-plt.imshow(mask)
-plt.show()
-plt.clf()
+for x in [input_images, target_masks]:
+    print(x.shape)
+    print(x.min(), x.max())
 
-print(image.shape)
-print(mask.shape)
+for i in range(3):
+    plt.imshow(input_images[i])
+    plt.show()
+    plt.clf()
 
+    plt.imshow(target_masks[i])
+    plt.show()
+    plt.clf()
 
-
-
-
-
-x, y = zip(*[generate_img_and_mask(height, width) for i in range(0, count)])
+#print(image.shape)
+#print(mask.shape)
