@@ -1,99 +1,67 @@
-######################################################################
-# Import modules
-######################################################################
-
-import torch
+import os,sys
+import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
-from skimage.morphology import binary_opening, disk, label
-from PIL import Image
+import helper
+import simulation
 
-torch.manual_seed(2021)
-r1 = -1
-r2 = 1
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms, datasets, models
 
-pred = (r1 - r2) * torch.rand((1, 2, 2, 2)) + r2
+import torchvision.utils
 
-print('mask1')
-print(pred)
+from torchsummary import summary
+import torch
+import torch.nn as nn
+import pytorch_unet
 
-pred = torch.softmax(pred,dim=1)
-pred = pred.data.cpu().numpy()
+from collections import defaultdict
+import torch.nn.functional as F
+from loss import dice_loss
 
-for masks in pred:
-    channels, height, width = masks.shape
-    colorimg = np.ones((height, width), dtype=np.float32) * 255
-    for y in range(height):
-        for x in range(width):
-            if masks[1,y,x] >= 0.5:
-                colorimg[y,x] = 1
-            else:
-                colorimg[y,x] = 0
+import torch.optim as optim
+from torch.optim import lr_scheduler
+import time
+import copy
 
-print('colorimg')
-print(colorimg)
+import math
 
-#print('##########################')
-#print('# GitHub')
-#print('##########################')
 
-#pred = (r1 - r2) * torch.rand((1, 6, 2, 2)) + r2
+# Generate some random images
+input_images, target_masks = simulation.generate_random_data(192, 192, count=4)
 
-#print('mask1')
-#print(pred)
+input_images = np.squeeze(input_images)
+print(input_images.shape)
 
-#pred = torch.sigmoid(pred)
-#pred = pred.data.cpu().numpy()
+target_masks = np.squeeze(target_masks)
+print(target_masks.shape)
 
-#for masks in pred:
-#    colors = np.asarray([(201, 58, 64), (242, 207, 1), (0, 152, 75), (101, 172, 228),(56, 34, 132), (160, 194, 56)])
-#    channels, height, width = masks.shape
-#    print(masks.shape)
-#    colorimg = np.ones((height, width, 3), dtype=np.float32) * 255
-#    print('masks')
-#    print(masks)
-#    print('colorimg')
-#    print(colorimg)
-    
+#layer1 = target_masks[0]
+#layer2 = target_masks[1]
+#layer3 = target_masks[2]
+#layer4 = target_masks[0]
+#layer5 = target_masks[0]
+#layer6 = target_masks[0]
 
-#    for y in range(height):
-#        for x in range(width):
-#            print('masks[:,y,x]')
-#            print(masks[:,y,x])
-#            print('masks[:,y,x] > 0.5')
-#            print(masks[:,y,x] > 0.5)
-#            print('colors[masks[:,y,x] > 0.5]')
-#            print(colors[masks[:,y,x] > 0.5])
-#            selected_colors = colors[masks[:,y,x] > 0.5]
+#print('layer1')
+#print(layer1.min(), layer1.max(), layer1.mean(), layer1.std())
+#print(layer1[100:115,70:85])
+#print('layer2')
+#print(layer2.min(), layer2.max(), layer2.mean(), layer2.std())
+#print(layer2[100:115,70:85])
+#print('layer3')
+#print(layer3.min(), layer3.max(), layer3.mean(), layer3.std())
+#print(layer3[100:115,70:85])
+#print('layer4')
+#print(layer4.min(), layer4.max(), layer4.mean(), layer4.std())
+#print(layer4[100:115,70:85])
+#print('layer5')
+#print(layer5.min(), layer5.max(), layer5.mean(), layer5.std())
+#print(layer5[100:115,70:85])
+#print('layer6')
+#print(layer6.min(), layer6.max(), layer6.mean(), layer6.std())
+#print(layer6[100:115,70:85])
 
-#            if len(selected_colors) > 0:
-#                colorimg[y,x,:] = np.mean(selected_colors, axis=0)
-#print('colorimg')
-#print(colorimg)
-
-# Change channel-order and make 3 channels for matplot
-#input_images_rgb = [reverse_transform(x) for x in inputs.cpu()]
-
-# Map each channel (i.e. class) to each color
-#target_masks_rgb = [helper.masks_to_colorimg(x) for x in labels.cpu().numpy()]
-#pred_rgb = [helper.masks_to_colorimg(x) for x in pred
-
-##########################
-# Kaggle
-##########################
-
-#mask = torch.rand((1, 2, 5, 5))
-#print('mask1')
-#print(mask)
-#mask = mask[0, 0]
-#print('mask2')
-#print(mask)
-#mask = torch.sigmoid(mask).data.cpu().numpy()
-#print('mask3')
-#print(mask)
-#mask = binary_opening(mask > 0.5)
-#print(mask)
-#print('mask4')
-#mask = Image.fromarray(mask.astype(np.uint8))
-#print('mask5')
-#print(mask)
-#mask = np.array(mask).astype(np.bool)
+#plt.imshow(target_masks)
+#plt.show()
+#plt.clf()
