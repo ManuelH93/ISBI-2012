@@ -38,8 +38,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, datasets, models
 
 class SimDataset(Dataset):
-    def __init__(self, count, transform=None):
-        self.input_images, self.target_masks = simulation.generate_random_data(192, 192, count=count)        
+    def __init__(self, count, imgs_train, masks, transform=None):
+        self.input_images, self.target_masks = simulation.reshape_images(imgs_train, masks, count=count)        
         self.transform = transform
     
     def __len__(self):
@@ -58,8 +58,8 @@ trans = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-train_set = SimDataset(2000, transform = trans)
-val_set = SimDataset(200, transform = trans)
+train_set = SimDataset(2000, imgs_train, masks, transform = trans)
+val_set = SimDataset(200, imgs_train, masks, transform = trans)
 
 image_datasets = {
     'train': train_set, 'val': val_set
@@ -107,10 +107,10 @@ import pytorch_unet
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-model = pytorch_unet.UNet(6)
+model = pytorch_unet.UNet(1)
 model = model.to(device)
 
-summary(model, input_size=(3, 224, 224))
+summary(model, input_size=(3, 576, 576))
 
 
 from collections import defaultdict
@@ -211,7 +211,7 @@ import copy
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-num_class = 6
+num_class = 1
 
 model = pytorch_unet.UNet(num_class).to(device)
 
