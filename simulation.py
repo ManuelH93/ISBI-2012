@@ -21,6 +21,11 @@ def load_data(directory):
     masks = masks.transpose(1,2,0)
     masks = np.squeeze(np.dsplit(masks, 30))
     masks = masks / 255
+    # Replace 1s with 0s and 0s with 1s
+    indices_one = masks == 1
+    indices_zero = masks == 0
+    masks[indices_one] = 0
+    masks[indices_zero] = 1
 
     imgs_test = tiff.imread(os.path.join(directory, 'test-volume.tif'))
     imgs_test = imgs_test.transpose(1,2,0)
