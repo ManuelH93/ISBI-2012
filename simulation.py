@@ -13,6 +13,9 @@ def load_data(directory):
     imgs_train = tiff.imread(os.path.join(directory, 'train-volume.tif'))
     imgs_train = imgs_train.transpose(1,2,0)
     imgs_train = np.squeeze(np.dsplit(imgs_train, 30))
+    # Add colour dimension for RGB channel
+    imgs_train = np.expand_dims(imgs_train,1)
+    imgs_train = imgs_train.repeat(3, axis=1).transpose([0, 2, 3, 1]).astype(np.uint8)
 
     masks = tiff.imread(os.path.join(directory,'train-labels.tif'))
     masks = masks.transpose(1,2,0)
@@ -22,6 +25,9 @@ def load_data(directory):
     imgs_test = tiff.imread(os.path.join(directory, 'test-volume.tif'))
     imgs_test = imgs_test.transpose(1,2,0)
     imgs_test = np.squeeze(np.dsplit(imgs_test, 30))
+    # Add colour dimension for RGB channel
+    imgs_test = np.expand_dims(imgs_test,1)
+    imgs_test = imgs_test.repeat(3, axis=1).transpose([0, 2, 3, 1]).astype(np.uint8)
 
     return imgs_train, masks, imgs_test
     
@@ -62,8 +68,6 @@ def reshape_images(imgs_train, masks, count):
     """
     input_images, target_masks = zip(*[aug_image(imgs_train, masks) for i in range(0, count)])
     input_images = np.asarray(input_images)
-    # add colour channel (in this case greyscale, in case of RGB thee would be 3 channels).
-    input_images = np.expand_dims(input_images, 3)
     target_masks = np.asarray(target_masks)
     # add channel for number of target categories. In this case 1.
     target_masks = np.expand_dims(target_masks, 1)
