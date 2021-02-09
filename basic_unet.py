@@ -16,7 +16,7 @@ random.seed(2021)
 
 # Load data
 imgs_train, masks, imgs_test = simulation.load_data(DATA)
-# Generate some random images
+# Generate some random images based on raw data
 input_images, target_masks = simulation.reshape_images(imgs_train, masks, count=3)
 
 for x in [input_images, target_masks]:

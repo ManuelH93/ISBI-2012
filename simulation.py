@@ -57,7 +57,8 @@ def get_aug(p=1.0):
     ], p=p)
 
 def aug_image(imgs, masks):
-    # We have thirty images for training data
+    # We have thirty images for training data and we randomly pick one
+    # for augmentation
     random_number = random.randint(0,29)
     image = imgs[random_number]
     mask = masks[random_number]
@@ -76,5 +77,4 @@ def reshape_images(imgs_train, masks, count):
     target_masks = np.asarray(target_masks)
     # add channel for number of target categories. In this case 1.
     target_masks = np.expand_dims(target_masks, 1)
-
     return input_images, target_masks
