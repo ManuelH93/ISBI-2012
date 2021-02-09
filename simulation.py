@@ -43,7 +43,8 @@ def get_aug(p=1.0):
         A.RandomRotate90(),
         A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=15, p=0.9, 
                          border_mode=cv2.BORDER_REFLECT),
-        A.PadIfNeeded(min_height=572, min_width=572, p=1),
+        # Update image size to 572 once model structure from original paper is adopted
+        A.PadIfNeeded(min_height=576, min_width=576, p=1),
         A.OneOf([
             A.OpticalDistortion(p=0.3),
             A.GridDistortion(p=.1),
