@@ -32,7 +32,7 @@ target_masks_rgb = [helper.masks_to_colorimg(x) for x in target_masks]
 
 # Left: Input image, Right: Target mask (Ground-truth)
 helper.plot_side_by_side([input_images_rgb, target_masks_rgb])
-plt.show()
+#plt.show()
 plt.clf()
 
 from torch.utils.data import Dataset, DataLoader
@@ -97,7 +97,7 @@ for x in [inputs.numpy(), masks.numpy()]:
     print(x.min(), x.max(), x.mean(), x.std())
 
 plt.imshow(reverse_transform(inputs[0]))
-plt.show()
+#plt.show()
 plt.clf()
 
 
@@ -249,6 +249,6 @@ target_masks_rgb = [helper.masks_to_colorimg(x) for x in labels.cpu().numpy()]
 pred_rgb = [helper.masks_to_colorimg(x) for x in pred]
 
 helper.plot_side_by_side([input_images_rgb, target_masks_rgb, pred_rgb])
-plt.show()
+#plt.show()
 plt.savefig(os.path.join(OUTPUT,'prediction.png'))
 plt.clf()
