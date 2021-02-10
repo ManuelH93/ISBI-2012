@@ -13,3 +13,4 @@ RUN python3 -m pip install pandas
 RUN python3 -m pip install torchsummary
 RUN python3 -m pip install tiffile
 RUN python3 -m pip install albumentations
+RUN python3 -m pip --no-cache-dir install --upgrade awscli
