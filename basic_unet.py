@@ -66,7 +66,7 @@ image_datasets = {
     'train': train_set, 'val': val_set
 }
 
-batch_size = 25
+batch_size = 15
 
 dataloaders = {
     'train': DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0),
@@ -139,7 +139,7 @@ def print_metrics(metrics, epoch_samples, phase):
         
     print("{}: {}".format(phase, ", ".join(outputs)))    
 
-def train_model(model, optimizer, scheduler, num_epochs=25):
+def train_model(model, optimizer, scheduler, num_epochs=50):
     best_model_wts = copy.deepcopy(model.state_dict())
     best_loss = 1e10
 
