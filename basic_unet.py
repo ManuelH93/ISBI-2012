@@ -15,9 +15,9 @@ random.seed(2021)
 
 
 # Load data
-imgs_train, masks, imgs_test = simulation.load_data(DATA)
+imgs_train, masks_train, imgs_test, masks_test = simulation.load_data(DATA)
 # Generate some random images based on raw data
-input_images, target_masks = simulation.reshape_images(imgs_train, masks, count=3)
+input_images, target_masks = simulation.reshape_images(imgs_train, masks_train, count=3, train=True)
 
 for x in [input_images, target_masks]:
     print(x.shape)
@@ -37,9 +37,9 @@ plt.clf()
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, datasets, models
 
-class SimDataset(Dataset):
-    def __init__(self, count, imgs_train, masks, transform=None):
-        self.input_images, self.target_masks = simulation.reshape_images(imgs_train, masks, count=count)        
+class ISBI_Dataset(Dataset):
+    def __init__(self, count, imgs_train, masks, train, transform=None):
+        self.input_images, self.target_masks = simulation.reshape_images(imgs_train, masks, count=count, train=True)        
         self.transform = transform
     
     def __len__(self):
@@ -58,8 +58,8 @@ trans = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-train_set = SimDataset(2000, imgs_train, masks, transform = trans)
-val_set = SimDataset(200, imgs_train, masks, transform = trans)
+train_set = ISBI_Dataset(2000, imgs_train, masks_train, train=True, transform = trans)
+val_set = ISBI_Dataset(200, imgs_train, masks_train, train=True, transform = trans)
 
 image_datasets = {
     'train': train_set, 'val': val_set
@@ -228,9 +228,9 @@ import math
 
 model.eval()   # Set model to evaluate mode
 
-test_dataset = SimDataset(3, transform = trans)
+test_dataset = ISBI_Dataset(3, imgs_test, masks_test, train=False, transform = trans)
 test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=0)
-        
+
 inputs, labels = next(iter(test_loader))
 inputs = inputs.to(device)
 labels = labels.to(device)

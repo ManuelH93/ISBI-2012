@@ -17,15 +17,15 @@ def load_data(directory):
     imgs_train = np.expand_dims(imgs_train,1)
     imgs_train = imgs_train.repeat(3, axis=1).transpose([0, 2, 3, 1]).astype(np.uint8)
 
-    masks = tiff.imread(os.path.join(directory,'train-labels.tif'))
-    masks = masks.transpose(1,2,0)
-    masks = np.squeeze(np.dsplit(masks, 30))
-    masks = masks / 255
+    masks_train = tiff.imread(os.path.join(directory,'train-labels.tif'))
+    masks_train = masks_train.transpose(1,2,0)
+    masks_train = np.squeeze(np.dsplit(masks_train, 30))
+    masks_train = masks_train / 255
     # Replace 1s with 0s and 0s with 1s
-    indices_one = masks == 1
-    indices_zero = masks == 0
-    masks[indices_one] = 0
-    masks[indices_zero] = 1
+    indices_one = masks_train == 1
+    indices_zero = masks_train == 0
+    masks_train[indices_one] = 0
+    masks_train[indices_zero] = 1
 
     imgs_test = tiff.imread(os.path.join(directory, 'test-volume.tif'))
     imgs_test = imgs_test.transpose(1,2,0)
@@ -34,9 +34,12 @@ def load_data(directory):
     imgs_test = np.expand_dims(imgs_test,1)
     imgs_test = imgs_test.repeat(3, axis=1).transpose([0, 2, 3, 1]).astype(np.uint8)
 
-    return imgs_train, masks, imgs_test
+    # Create dummy masks for code to work
+    masks_test = np.zeros((30, 512, 512))
+
+    return imgs_train, masks_train, imgs_test, masks_test
     
-def get_aug(p=1.0):
+def get_aug_train(p=1.0):
     return A.Compose([
         A.HorizontalFlip(),
         A.VerticalFlip(),
@@ -57,23 +60,32 @@ def get_aug(p=1.0):
         ], p=0.3),
     ], p=p)
 
-def aug_image(imgs, masks):
+def get_aug_test(p=1.0):
+    return A.Compose([
+        # Update image size to 572 once model structure from original paper is adopted
+        A.PadIfNeeded(min_height=576, min_width=576, p=1),
+    ], p=p)
+
+def aug_image(imgs, masks, train):
     # We have thirty images for training data and we randomly pick one
     # for augmentation
     random_number = random.randint(0,29)
     image = imgs[random_number]
     mask = masks[random_number]
-    tfms = get_aug()
+    if train:
+        tfms = get_aug_train()
+    else:
+        tfms = get_aug_test()
     augmented = tfms(image=image, mask=mask)
     image, mask = augmented['image'],augmented['mask']
     return image, mask
 
-def reshape_images(imgs_train, masks, count):
+def reshape_images(imgs_train, masks, count, train):
     """
     Reshape training images into array format required
     by model.
     """
-    input_images, target_masks = zip(*[aug_image(imgs_train, masks) for i in range(0, count)])
+    input_images, target_masks = zip(*[aug_image(imgs_train, masks, train) for i in range(0, count)])
     input_images = np.asarray(input_images)
     target_masks = np.asarray(target_masks)
     # add channel for number of target categories. In this case 1.
