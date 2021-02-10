@@ -11,6 +11,7 @@ import random
 ###########################################################
 
 DATA = 'raw_data'
+OUTPUT = 'output'
 random.seed(2021)
 
 
@@ -198,7 +199,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-    torch.save(model.state_dict(), os.path.join('bst_unet.model'))
+    torch.save(model.state_dict(), os.path.join(OUTPUT, 'bst_unet.model'))
     return model
 
 
@@ -249,5 +250,5 @@ pred_rgb = [helper.masks_to_colorimg(x) for x in pred]
 
 helper.plot_side_by_side([input_images_rgb, target_masks_rgb, pred_rgb])
 #plt.show()
-plt.savefig(os.path.join('prediction.png'))
+plt.savefig(os.path.join(OUTPUT, 'prediction.png'))
 plt.clf()
