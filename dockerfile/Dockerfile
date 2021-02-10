@@ -11,3 +11,5 @@ RUN apt-get -y install git
 RUN python3 -m pip install matplotlib
 RUN python3 -m pip install pandas
 RUN python3 -m pip install torchsummary
+RUN python3 -m pip install tiffile
+RUN python3 -m pip install albumentations
