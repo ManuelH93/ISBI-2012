@@ -39,7 +39,7 @@ from torchvision import transforms, datasets, models
 
 class ISBI_Dataset(Dataset):
     def __init__(self, count, imgs_train, masks, train, transform=None):
-        self.input_images, self.target_masks = simulation.reshape_images(imgs_train, masks, count=count, train=True)        
+        self.input_images, self.target_masks = simulation.reshape_images(imgs_train, masks, train, count=count)        
         self.transform = transform
     
     def __len__(self):

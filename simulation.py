@@ -80,7 +80,7 @@ def aug_image(imgs, masks, train):
     image, mask = augmented['image'],augmented['mask']
     return image, mask
 
-def reshape_images(imgs_train, masks, count, train):
+def reshape_images(imgs_train, masks, train, count):
     """
     Reshape training images into array format required
     by model.
