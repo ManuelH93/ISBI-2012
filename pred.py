@@ -54,7 +54,7 @@ num_class = 1
 
 model = pytorch_unet.UNet(num_class).to(device)
 
-model.load_state_dict(torch.load(os.path.join(MODEL,'bst_unet.model'),map_location=torch.device(device)))
+model.load_state_dict(torch.load(os.path.join(MODEL,'bst_unet - 2021.01.10.model'), map_location=torch.device(device)))
 
 
 
