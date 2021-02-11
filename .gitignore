@@ -5,3 +5,5 @@
 *.png
 *.zip
 *.model
+*.pyc
+trained_model/bst_unet.model - 2021.01.10

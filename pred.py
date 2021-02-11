@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt
 import random
 
 
-MODEL = 'trained model'
+MODEL = 'trained_model'
 
 DATA = 'raw_data'
+OUTPUT = 'output'
 random.seed(2021)
 
 # Load data
@@ -79,7 +80,7 @@ target_masks_rgb = [helper.masks_to_colorimg(x) for x in labels.cpu().numpy()]
 pred_rgb = [helper.masks_to_colorimg(x) for x in pred]
 
 helper.plot_side_by_side([input_images_rgb, target_masks_rgb, pred_rgb])
-plt.show()
-#plt.savefig(os.path.join('prediction.png'))
+#plt.show()
+plt.savefig(os.path.join(OUTPUT,'prediction.png'))
 plt.clf()
 

@@ -1,0 +1,325 @@
+root@d30ad04884ae:/workspace/ISBI-2012# python3 basic_unet.py 
+(3, 576, 576, 3)
+0 253
+(3, 1, 576, 576)
+0.0 1.0
+{'train': 2000, 'val': 200}
+torch.Size([5, 3, 576, 576]) torch.Size([5, 1, 576, 576])
+0.0 1.0 0.4857632 0.16446374
+0.0 1.0 0.2335575810185185 0.42309388717788954
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1         [-1, 64, 576, 576]           1,792
+              ReLU-2         [-1, 64, 576, 576]               0
+            Conv2d-3         [-1, 64, 576, 576]          36,928
+              ReLU-4         [-1, 64, 576, 576]               0
+         MaxPool2d-5         [-1, 64, 288, 288]               0
+            Conv2d-6        [-1, 128, 288, 288]          73,856
+              ReLU-7        [-1, 128, 288, 288]               0
+            Conv2d-8        [-1, 128, 288, 288]         147,584
+              ReLU-9        [-1, 128, 288, 288]               0
+        MaxPool2d-10        [-1, 128, 144, 144]               0
+           Conv2d-11        [-1, 256, 144, 144]         295,168
+             ReLU-12        [-1, 256, 144, 144]               0
+           Conv2d-13        [-1, 256, 144, 144]         590,080
+             ReLU-14        [-1, 256, 144, 144]               0
+        MaxPool2d-15          [-1, 256, 72, 72]               0
+           Conv2d-16          [-1, 512, 72, 72]       1,180,160
+             ReLU-17          [-1, 512, 72, 72]               0
+           Conv2d-18          [-1, 512, 72, 72]       2,359,808
+             ReLU-19          [-1, 512, 72, 72]               0
+         Upsample-20        [-1, 512, 144, 144]               0
+           Conv2d-21        [-1, 256, 144, 144]       1,769,728
+             ReLU-22        [-1, 256, 144, 144]               0
+           Conv2d-23        [-1, 256, 144, 144]         590,080
+             ReLU-24        [-1, 256, 144, 144]               0
+         Upsample-25        [-1, 256, 288, 288]               0
+           Conv2d-26        [-1, 128, 288, 288]         442,496
+             ReLU-27        [-1, 128, 288, 288]               0
+           Conv2d-28        [-1, 128, 288, 288]         147,584
+             ReLU-29        [-1, 128, 288, 288]               0
+         Upsample-30        [-1, 128, 576, 576]               0
+           Conv2d-31         [-1, 64, 576, 576]         110,656
+             ReLU-32         [-1, 64, 576, 576]               0
+           Conv2d-33         [-1, 64, 576, 576]          36,928
+             ReLU-34         [-1, 64, 576, 576]               0
+           Conv2d-35          [-1, 1, 576, 576]              65
+================================================================
+Total params: 7,782,913
+Trainable params: 7,782,913
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 3.80
+Forward/backward pass size (MB): 2989.41
+Params size (MB): 29.69
+Estimated Total Size (MB): 3022.89
+----------------------------------------------------------------
+cuda:0
+Epoch 0/39
+----------
+/opt/conda/lib/python3.7/site-packages/torch/optim/lr_scheduler.py:136: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  "https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate", UserWarning)
+LR 0.0001
+train: bce: 0.373579, dice: 0.469264, loss: 0.421422
+val: bce: 0.325631, dice: 0.371194, loss: 0.348413
+saving best model
+12m 29s
+Epoch 1/39
+----------
+LR 0.0001
+train: bce: 0.292646, dice: 0.330559, loss: 0.311602
+val: bce: 0.253040, dice: 0.312406, loss: 0.282723
+saving best model
+12m 52s
+Epoch 2/39
+----------
+LR 0.0001
+train: bce: 0.247951, dice: 0.269747, loss: 0.258849
+val: bce: 0.238439, dice: 0.257940, loss: 0.248190
+saving best model
+12m 55s
+Epoch 3/39
+----------
+LR 0.0001
+train: bce: 0.227824, dice: 0.247166, loss: 0.237495
+val: bce: 0.214073, dice: 0.242930, loss: 0.228501
+saving best model
+12m 56s
+Epoch 4/39
+----------
+LR 0.0001
+train: bce: 0.217417, dice: 0.236651, loss: 0.227034
+val: bce: 0.211776, dice: 0.239819, loss: 0.225798
+saving best model
+12m 56s
+Epoch 5/39
+----------
+LR 0.0001
+train: bce: 0.209783, dice: 0.228552, loss: 0.219168
+val: bce: 0.209776, dice: 0.228154, loss: 0.218965
+saving best model
+12m 56s
+Epoch 6/39
+----------
+LR 0.0001
+train: bce: 0.203874, dice: 0.221882, loss: 0.212878
+val: bce: 0.197609, dice: 0.225741, loss: 0.211675
+saving best model
+12m 56s
+Epoch 7/39
+----------
+LR 0.0001
+train: bce: 0.198542, dice: 0.216144, loss: 0.207343
+val: bce: 0.195386, dice: 0.216204, loss: 0.205795
+saving best model
+12m 56s
+Epoch 8/39
+----------
+LR 0.0001
+train: bce: 0.193376, dice: 0.210231, loss: 0.201803
+val: bce: 0.198714, dice: 0.211893, loss: 0.205304
+saving best model
+12m 56s
+Epoch 9/39
+----------
+LR 0.0001
+train: bce: 0.187656, dice: 0.203793, loss: 0.195724
+val: bce: 0.190912, dice: 0.207572, loss: 0.199242
+saving best model
+12m 56s
+Epoch 10/39
+----------
+LR 0.0001
+train: bce: 0.182469, dice: 0.198225, loss: 0.190347
+val: bce: 0.194730, dice: 0.195953, loss: 0.195341
+saving best model
+12m 56s
+Epoch 11/39
+----------
+LR 0.0001
+train: bce: 0.178505, dice: 0.193725, loss: 0.186115
+val: bce: 0.183842, dice: 0.197038, loss: 0.190440
+saving best model
+12m 55s
+Epoch 12/39
+----------
+LR 0.0001
+train: bce: 0.173711, dice: 0.188662, loss: 0.181186
+val: bce: 0.184947, dice: 0.192616, loss: 0.188782
+saving best model
+12m 55s
+Epoch 13/39
+----------
+LR 0.0001
+train: bce: 0.168572, dice: 0.183169, loss: 0.175871
+val: bce: 0.182740, dice: 0.194328, loss: 0.188534
+saving best model
+12m 56s
+Epoch 14/39
+----------
+LR 0.0001
+train: bce: 0.164922, dice: 0.179302, loss: 0.172112
+val: bce: 0.180178, dice: 0.188998, loss: 0.184588
+saving best model
+12m 56s
+Epoch 15/39
+----------
+LR 0.0001
+train: bce: 0.161784, dice: 0.175985, loss: 0.168885
+val: bce: 0.176894, dice: 0.187243, loss: 0.182069
+saving best model
+12m 56s
+Epoch 16/39
+----------
+LR 0.0001
+train: bce: 0.157468, dice: 0.171387, loss: 0.164428
+val: bce: 0.177581, dice: 0.183378, loss: 0.180480
+saving best model
+12m 56s
+Epoch 17/39
+----------
+LR 0.0001
+train: bce: 0.154625, dice: 0.168357, loss: 0.161491
+val: bce: 0.175205, dice: 0.180137, loss: 0.177671
+saving best model
+12m 55s
+Epoch 18/39
+----------
+LR 0.0001
+train: bce: 0.151386, dice: 0.164800, loss: 0.158093
+val: bce: 0.175576, dice: 0.181651, loss: 0.178613
+12m 56s
+Epoch 19/39
+----------
+LR 0.0001
+train: bce: 0.148389, dice: 0.161607, loss: 0.154998
+val: bce: 0.171090, dice: 0.177985, loss: 0.174537
+saving best model
+12m 56s
+Epoch 20/39
+----------
+LR 0.0001
+train: bce: 0.144895, dice: 0.157872, loss: 0.151383
+val: bce: 0.175952, dice: 0.173005, loss: 0.174478
+saving best model
+12m 56s
+Epoch 21/39
+----------
+LR 0.0001
+train: bce: 0.141805, dice: 0.154473, loss: 0.148139
+val: bce: 0.175772, dice: 0.171388, loss: 0.173580
+saving best model
+12m 56s
+Epoch 22/39
+----------
+LR 0.0001
+train: bce: 0.138921, dice: 0.151260, loss: 0.145090
+val: bce: 0.175109, dice: 0.172776, loss: 0.173942
+12m 55s
+Epoch 23/39
+----------
+LR 0.0001
+train: bce: 0.136031, dice: 0.148109, loss: 0.142070
+val: bce: 0.171864, dice: 0.170240, loss: 0.171052
+saving best model
+12m 55s
+Epoch 24/39
+----------
+LR 1e-05
+train: bce: 0.128749, dice: 0.140244, loss: 0.134497
+val: bce: 0.171895, dice: 0.164728, loss: 0.168311
+saving best model
+12m 55s
+Epoch 25/39
+----------
+LR 1e-05
+train: bce: 0.127585, dice: 0.138730, loss: 0.133158
+val: bce: 0.173595, dice: 0.163582, loss: 0.168589
+12m 56s
+Epoch 26/39
+----------
+LR 1e-05
+train: bce: 0.126902, dice: 0.137885, loss: 0.132393
+val: bce: 0.173345, dice: 0.164096, loss: 0.168720
+12m 57s
+Epoch 27/39
+----------
+LR 1e-05
+train: bce: 0.126438, dice: 0.137341, loss: 0.131889
+val: bce: 0.171923, dice: 0.164932, loss: 0.168428
+12m 56s
+Epoch 28/39
+----------
+LR 1e-05
+train: bce: 0.125720, dice: 0.136623, loss: 0.131172
+val: bce: 0.175572, dice: 0.162257, loss: 0.168914
+12m 55s
+Epoch 29/39
+----------
+LR 1e-05
+train: bce: 0.125229, dice: 0.135978, loss: 0.130603
+val: bce: 0.175176, dice: 0.162759, loss: 0.168967
+12m 55s
+Epoch 30/39
+----------
+LR 1e-05
+train: bce: 0.124578, dice: 0.135295, loss: 0.129936
+val: bce: 0.174904, dice: 0.162616, loss: 0.168760
+12m 56s
+Epoch 31/39
+----------
+LR 1e-05
+train: bce: 0.124059, dice: 0.134656, loss: 0.129357
+val: bce: 0.174613, dice: 0.163087, loss: 0.168850
+12m 56s
+Epoch 32/39
+----------
+LR 1e-05
+train: bce: 0.123509, dice: 0.134118, loss: 0.128813
+val: bce: 0.175950, dice: 0.162297, loss: 0.169123
+12m 56s
+Epoch 33/39
+----------
+LR 1e-05
+train: bce: 0.123000, dice: 0.133483, loss: 0.128241
+val: bce: 0.176290, dice: 0.161446, loss: 0.168868
+12m 56s
+Epoch 34/39
+----------
+LR 1e-05
+train: bce: 0.122468, dice: 0.132937, loss: 0.127702
+val: bce: 0.176576, dice: 0.161329, loss: 0.168952
+12m 57s
+Epoch 35/39
+----------
+LR 1e-05
+train: bce: 0.121938, dice: 0.132293, loss: 0.127116
+val: bce: 0.177005, dice: 0.161651, loss: 0.169328
+12m 57s
+Epoch 36/39
+----------
+LR 1e-05
+train: bce: 0.121482, dice: 0.131767, loss: 0.126624
+val: bce: 0.177110, dice: 0.162570, loss: 0.169840
+12m 57s
+Epoch 37/39
+----------
+LR 1e-05
+train: bce: 0.120980, dice: 0.131219, loss: 0.126100
+val: bce: 0.177978, dice: 0.161322, loss: 0.169650
+12m 57s
+Epoch 38/39
+----------
+LR 1e-05
+train: bce: 0.120453, dice: 0.130691, loss: 0.125572
+val: bce: 0.178161, dice: 0.160961, loss: 0.169561
+12m 56s
+Epoch 39/39
+----------
+LR 1e-05
+train: bce: 0.119938, dice: 0.130083, loss: 0.125010
+val: bce: 0.181601, dice: 0.161731, loss: 0.171666
+12m 56s
+Best val loss: 0.168311
+(3, 1, 576, 576)
