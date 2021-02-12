@@ -55,6 +55,8 @@ class ISBI_Dataset(Dataset):
         return [image, mask]
 
 # use same transform for train/val for this example
+# ToTensor divides array by 255 and transposes array.
+# It assumes RBG channel comes last and moves it first.
 trans = transforms.Compose([
     transforms.ToTensor(),
 ])
