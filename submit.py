@@ -58,8 +58,8 @@ model.load_state_dict(torch.load(os.path.join(MODEL,'bst_unet - 2021.01.10.model
 
 model.eval()   # Set model to evaluate mode
 
-test_dataset = ISBI_Dataset(2, imgs_test, masks_test, train=False, transform = trans)
-test_loader = DataLoader(test_dataset, batch_size=2, shuffle=False, num_workers=0)
+test_dataset = ISBI_Dataset(30, imgs_test, masks_test, train=False, transform = trans)
+test_loader = DataLoader(test_dataset, batch_size=30, shuffle=False, num_workers=0)
         
 inputs, labels = next(iter(test_loader))
 inputs = inputs.to(device)
