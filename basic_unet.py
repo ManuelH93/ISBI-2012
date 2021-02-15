@@ -146,14 +146,14 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
     best_loss = 1e10
 
     # for figure
-    num_epochs = []
+    epochs = []
     train_loss = []
     val_loss = []
 
     for epoch in range(num_epochs):
         print('-' * 10)
         print('Epoch {}/{}'.format(epoch + 1, num_epochs))
-        num_epochs.append(epoch+1)
+        epochs.append(epoch+1)
         
         since = time.time()
 
@@ -195,11 +195,11 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
             print_metrics(metrics, epoch_samples, phase)
             epoch_loss = metrics['loss'] / epoch_samples
            
-            # collect statistics for figure 
+            # collect statistics for figure
             if phase == 'train':
-                 train_loss.append(metrics['loss'])
+                train_loss.append(metrics['loss']/epoch_samples)
             else:
-                val_loss.append(metrics['loss'])
+                val_loss.append(metrics['loss']/epoch_samples)
 
             # deep copy the model
             if phase == 'val' and epoch_loss < best_loss:
@@ -212,8 +212,8 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
     print('Best val loss: {:4f}'.format(best_loss))
 
     # Save loss figure
-    plt.plot(num_epochs, train_loss, color='g', label = 'train')
-    plt.plot(num_epochs, val_loss, color='orange', label = 'test')
+    plt.plot(epochs, train_loss, color='g', label = 'train')
+    plt.plot(epochs, val_loss, color='orange', label = 'test')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.title('Losses')
