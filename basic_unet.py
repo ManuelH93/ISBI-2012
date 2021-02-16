@@ -5,61 +5,82 @@ import numpy as np
 import helper
 import simulation
 import random
+import cv2
+import torch
 
 ###########################################################
 # Define parameters
 ###########################################################
 
-DATA = 'raw_data'
+DATA = 'processed_data'
+TRAIN = 'train'
+MASKS = 'masks'
 OUTPUT = 'output'
 random.seed(2021)
 
-
-# Load data
-imgs_train, masks_train, imgs_test, masks_test = simulation.load_data(DATA)
-# Generate some random images based on raw data
-input_images, target_masks = simulation.reshape_images(imgs_train, masks_train, count=3, train=True)
-
-for x in [input_images, target_masks]:
-    print(x.shape)
-    print(x.min(), x.max())
-
-# Change channel-order and make 3 channels for matplot
-input_images_rgb = [x.astype(np.uint8) for x in input_images]
-
-# Map each channel (i.e. class) to each color
-target_masks_rgb = [helper.masks_to_colorimg(x) for x in target_masks]
-
-# Left: Input image, Right: Target mask (Ground-truth)
-helper.plot_side_by_side([input_images_rgb, target_masks_rgb])
-#plt.show()
-plt.clf()
+###########################################################
+# Define dataset
+###########################################################
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, datasets, models
 
 class ISBI_Dataset(Dataset):
-    def __init__(self, count, imgs_train, masks, train, transform=None):
-        self.input_images, self.target_masks = simulation.reshape_images(imgs_train, masks, train, count=count)        
-        self.transform = transform
-    
-    def __len__(self):
-        return len(self.input_images)
-    
-    def __getitem__(self, idx):        
-        image = self.input_images[idx]
-        mask = self.target_masks[idx]
-        if self.transform:
-            image = self.transform(image)
-        
-        return [image, mask]
 
-# use same transform for train/val for this example
-# ToTensor divides array by 255 and transposes array.
-# It assumes RBG channel comes last and moves it first.
-trans = transforms.Compose([
-    transforms.ToTensor(),
-])
+    def __init__(self, train = True, tfms=None):
+        ids = np.array([f'image_{i}.png' for i in range(1,31)])
+        random.shuffle(ids)
+        split = int(0.8 * len(ids))
+        self.fnames = ids[:split] if train else ids[split:]
+        self.tfms = tfms
+            
+    def __len__(self):
+        return len(self.fnames)
+    
+    def __getitem__(self, idx):
+        fname = self.fnames[idx]
+        img = cv2.imread(os.path.join(DATA,TRAIN,fname), cv2.IMREAD_GRAYSCALE)
+        mask = cv2.imread(os.path.join(DATA,MASKS,fname),cv2.IMREAD_GRAYSCALE)
+
+        if self.tfms is not None:
+            augmented = self.tfms(image=img,mask=mask)
+            img,mask = augmented['image'],augmented['mask']
+
+        img = img/255.0
+        img = np.expand_dims(img, 0)
+        img = torch.from_numpy(img.astype(np.float32, copy=False))
+
+        mask = mask/255.0
+        mask = simulation.oned_to_twod(mask)
+        mask = torch.from_numpy(mask.astype(np.int64, copy=False))
+        
+        return img, mask
+
+###########################################################
+# Test if dataset load works
+###########################################################
+
+ds = ISBI_Dataset(tfms = simulation.get_aug())
+dl = DataLoader(ds,batch_size=4)
+imgs,masks = next(iter(dl))
+print(imgs.shape)
+print(masks.shape)
+
+# Convert tensors back to arrays
+
+imgs = imgs.numpy()
+imgs = np.squeeze(imgs)
+masks = masks.numpy()
+masks = [simulation.twod_to_oned(mask) for mask in masks]
+
+for image, mask in zip(imgs,masks):
+    plt.imshow(image, cmap='gray')
+    plt.show()
+    plt.clf()
+    plt.imshow(mask, cmap='gray')
+    plt.show()
+    plt.clf()
+
 
 train_set = ISBI_Dataset(2000, imgs_train, masks_train, train=True, transform = trans)
 val_set = ISBI_Dataset(200, imgs_train, masks_train, train=True, transform = trans)
@@ -104,7 +125,6 @@ plt.clf()
 
 
 from torchsummary import summary
-import torch
 import torch.nn as nn
 import pytorch_unet
 

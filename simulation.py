@@ -4,6 +4,43 @@ import os
 import albumentations as A
 import cv2
 import random
+import copy
+
+def oned_to_twod(image):
+    image = np.expand_dims(image, 0)
+    membrane = copy.deepcopy(image)
+    # Replace 1s with 0s and 0s with 1s
+    indices_one = image == 1
+    indices_zero = image == 0
+    image[indices_one] = 0
+    image[indices_zero] = 1
+    mask = np.concatenate((image, membrane), axis=0)
+    return mask
+
+def twod_to_oned(image):
+    membrane = image[1]
+    return membrane
+
+def get_aug(p=1.0):
+    return A.Compose([
+        A.HorizontalFlip(),
+        A.VerticalFlip(),
+        A.RandomRotate90(),
+        A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=15, p=0.9, 
+                         border_mode=cv2.BORDER_REFLECT),
+        # Update image size to 572 once model structure from original paper is adopted
+        A.PadIfNeeded(min_height=572, min_width=572, p=1),
+        A.OneOf([
+            A.OpticalDistortion(p=0.3),
+            A.GridDistortion(p=.1),
+            A.IAAPiecewiseAffine(p=0.3),
+        ], p=0.3),
+        A.OneOf([
+            A.HueSaturationValue(10,15,10),
+            A.CLAHE(clip_limit=2),
+            A.RandomBrightnessContrast(),            
+        ], p=0.3),
+    ], p=p)
 
 def load_data(directory):
     """
