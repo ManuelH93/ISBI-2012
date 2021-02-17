@@ -35,7 +35,6 @@ def get_aug_train(p=1.0):
             A.IAAPiecewiseAffine(p=0.7),
         ], p=1.0),
         A.OneOf([
-            A.HueSaturationValue(10,15,10),
             A.CLAHE(clip_limit=2),
             A.RandomBrightnessContrast(),            
         ], p=0.5),
