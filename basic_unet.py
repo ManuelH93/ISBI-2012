@@ -1,5 +1,4 @@
-import os,sys
-import pandas as pd
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -17,9 +16,9 @@ from collections import defaultdict
 import torch.nn.functional as F
 
 from loss import dice_loss
-import helper
 import simulation
 import pytorch_unet
+
 
 ###########################################################
 # Define parameters
@@ -282,7 +281,7 @@ class ISBI_Dataset_test(Dataset):
 
         img = img/255.0
         img = np.expand_dims(img, 0)
-        #img = torch.from_numpy(img.astype(np.float32, copy=False))        
+        img = torch.from_numpy(img.astype(np.float32, copy=False))        
         return img
 
 model.eval()   # Set model to evaluate mode
@@ -299,7 +298,6 @@ print(preds.shape)
 
 # Convert tensors back to arrays
 
-preds = preds.numpy()
 preds = [simulation.twod_to_oned(pred) for pred in preds]
 
 for i,pred in enumerate(preds):
