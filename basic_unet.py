@@ -51,6 +51,7 @@ class ISBI_Dataset(Dataset):
         img = torch.from_numpy(img.astype(np.float32, copy=False))
 
         mask = mask/255.0
+        mask = simulation.center_crop(mask)
         mask = simulation.oned_to_twod(mask)
         mask = torch.from_numpy(mask.astype(np.int64, copy=False))
         
@@ -60,30 +61,33 @@ class ISBI_Dataset(Dataset):
 # Test if dataset load works
 ###########################################################
 
-ds = ISBI_Dataset(tfms = simulation.get_aug())
-dl = DataLoader(ds,batch_size=4)
-imgs,masks = next(iter(dl))
-print(imgs.shape)
-print(masks.shape)
+#ds = ISBI_Dataset(tfms = simulation.get_aug())
+#dl = DataLoader(ds,batch_size=4)
+#imgs,masks = next(iter(dl))
+#print(imgs.shape)
+#print(masks.shape)
 
 # Convert tensors back to arrays
 
-imgs = imgs.numpy()
-imgs = np.squeeze(imgs)
-masks = masks.numpy()
-masks = [simulation.twod_to_oned(mask) for mask in masks]
+#imgs = imgs.numpy()
+#imgs = np.squeeze(imgs)
+#masks = masks.numpy()
+#masks = [simulation.twod_to_oned(mask) for mask in masks]
 
-for image, mask in zip(imgs,masks):
-    plt.imshow(image, cmap='gray')
-    plt.show()
-    plt.clf()
-    plt.imshow(mask, cmap='gray')
-    plt.show()
-    plt.clf()
+#for image, mask in zip(imgs,masks):
+#    plt.imshow(image, cmap='gray')
+#    plt.show()
+#    plt.clf()
+#    plt.imshow(mask, cmap='gray')
+#    plt.show()
+#    plt.clf()
 
+###########################################################
+# Load test and validation dataset
+###########################################################
 
-train_set = ISBI_Dataset(2000, imgs_train, masks_train, train=True, transform = trans)
-val_set = ISBI_Dataset(200, imgs_train, masks_train, train=True, transform = trans)
+train_set = ISBI_Dataset(train=True, tfms=simulation.get_aug())
+val_set = ISBI_Dataset(train=False, tfms=simulation.get_aug())
 
 image_datasets = {
     'train': train_set, 'val': val_set
@@ -101,28 +105,6 @@ dataset_sizes = {
 }
 
 print(dataset_sizes)
-
-
-import torchvision.utils
-
-def reverse_transform(inp):
-    inp = inp.numpy().transpose((1, 2, 0))
-    inp = np.clip(inp, 0, 1)
-    inp = (inp * 255).astype(np.uint8)
-    
-    return inp
-
-# Get a batch of training data
-inputs, masks = next(iter(dataloaders['train']))
-
-print(inputs.shape, masks.shape)
-for x in [inputs.numpy(), masks.numpy()]:
-    print(x.min(), x.max(), x.mean(), x.std())
-
-plt.imshow(reverse_transform(inputs[3]))
-#plt.show()
-plt.clf()
-
 
 from torchsummary import summary
 import torch.nn as nn

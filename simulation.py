@@ -42,6 +42,13 @@ def get_aug(p=1.0):
         ], p=0.3),
     ], p=p)
 
+def center_crop(image):
+    target_size = 388
+    array_size = 572
+    delta = array_size - target_size
+    delta = delta // 2
+    return image[delta:array_size-delta, delta:array_size-delta]
+
 def load_data(directory):
     """
     Read in train images, test images and masks.
