@@ -7,6 +7,11 @@ import simulation
 import random
 import cv2
 import torch
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms, datasets, models
+from torchsummary import summary
+import torch.nn as nn
+import pytorch_unet
 
 ###########################################################
 # Define parameters
@@ -21,9 +26,6 @@ random.seed(2021)
 ###########################################################
 # Define dataset
 ###########################################################
-
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, datasets, models
 
 class ISBI_Dataset(Dataset):
 
@@ -106,16 +108,16 @@ dataset_sizes = {
 
 print(dataset_sizes)
 
-from torchsummary import summary
-import torch.nn as nn
-import pytorch_unet
+###########################################################
+# Load U-net
+###########################################################
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-model = pytorch_unet.UNet(1)
+model = pytorch_unet.UNet()
 model = model.to(device)
 
-summary(model, input_size=(3, 576, 576))
+summary(model, input_size=(1, 572, 572))
 
 
 from collections import defaultdict
