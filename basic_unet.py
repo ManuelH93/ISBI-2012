@@ -2,15 +2,23 @@ import os,sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import helper
-import simulation
 import random
 import cv2
+import time
+import copy
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, datasets, models
 from torchsummary import summary
+import torch.optim as optim
+from torch.optim import lr_scheduler
 import torch.nn as nn
+from collections import defaultdict
+import torch.nn.functional as F
+
+from loss import dice_loss
+import helper
+import simulation
 import pytorch_unet
 
 ###########################################################
@@ -20,6 +28,7 @@ import pytorch_unet
 DATA = 'processed_data'
 TRAIN = 'train'
 MASKS = 'masks'
+TEST = 'test'
 OUTPUT = 'output'
 random.seed(2021)
 
@@ -55,7 +64,7 @@ class ISBI_Dataset(Dataset):
         mask = mask/255.0
         mask = simulation.center_crop(mask)
         mask = simulation.oned_to_twod(mask)
-        mask = torch.from_numpy(mask.astype(np.int64, copy=False))
+        mask = torch.from_numpy(mask.astype(np.float32, copy=False))
         
         return img, mask
 
@@ -63,7 +72,7 @@ class ISBI_Dataset(Dataset):
 # Test if dataset load works
 ###########################################################
 
-#ds = ISBI_Dataset(tfms = simulation.get_aug())
+#ds = ISBI_Dataset(tfms = simulation.get_aug_train())
 #dl = DataLoader(ds,batch_size=4)
 #imgs,masks = next(iter(dl))
 #print(imgs.shape)
@@ -88,8 +97,8 @@ class ISBI_Dataset(Dataset):
 # Load test and validation dataset
 ###########################################################
 
-train_set = ISBI_Dataset(train=True, tfms=simulation.get_aug())
-val_set = ISBI_Dataset(train=False, tfms=simulation.get_aug())
+train_set = ISBI_Dataset(train=True, tfms=simulation.get_aug_train())
+val_set = ISBI_Dataset(train=False, tfms=simulation.get_aug_train())
 
 image_datasets = {
     'train': train_set, 'val': val_set
@@ -119,10 +128,9 @@ model = model.to(device)
 
 summary(model, input_size=(1, 572, 572))
 
-
-from collections import defaultdict
-import torch.nn.functional as F
-from loss import dice_loss
+###########################################################
+# Define loss calculation
+###########################################################
 
 def calc_loss(pred, target, metrics, bce_weight=0.5):
     bce = F.binary_cross_entropy_with_logits(pred, target)
@@ -144,6 +152,10 @@ def print_metrics(metrics, epoch_samples, phase):
         outputs.append("{}: {:4f}".format(k, metrics[k] / epoch_samples))
         
     print("{}: {}".format(phase, ", ".join(outputs)))    
+
+###########################################################
+# Define training
+###########################################################
 
 def train_model(model, optimizer, scheduler, num_epochs=25):
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -231,53 +243,67 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
     torch.save(model.state_dict(), os.path.join(OUTPUT, 'bst_unet.model'))
     return model
 
-
-import torch
-import torch.optim as optim
-from torch.optim import lr_scheduler
-import time
-import copy
+###########################################################
+# Run model
+###########################################################
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-num_class = 1
-
-model = pytorch_unet.UNet(num_class).to(device)
+model = pytorch_unet.UNet().to(device)
 
 # Observe that all parameters are being optimized
 optimizer_ft = optim.Adam(model.parameters(), lr=1e-4)
 
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=25, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=1500, gamma=0.1)
 
-model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=40)
+model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=3000)
 
-# prediction
+###########################################################
+# Predict
+###########################################################
 
-import math
+class ISBI_Dataset_test(Dataset):
+
+    def __init__(self, tfms=None):
+        self.fnames = np.array([f'image_{i}.png' for i in range(1,31)])
+        self.tfms = tfms
+            
+    def __len__(self):
+        return len(self.fnames)
+    
+    def __getitem__(self, idx):
+        fname = self.fnames[idx]
+        img = cv2.imread(os.path.join(DATA,TEST,fname), cv2.IMREAD_GRAYSCALE)
+
+        if self.tfms is not None:
+            augmented = self.tfms(image=img)
+            img = augmented['image']
+
+        img = img/255.0
+        img = np.expand_dims(img, 0)
+        #img = torch.from_numpy(img.astype(np.float32, copy=False))        
+        return img
 
 model.eval()   # Set model to evaluate mode
 
-test_dataset = ISBI_Dataset(3, imgs_test, masks_test, train=False, transform = trans)
+test_dataset = ISBI_Dataset_test(tfms=simulation.get_aug_test())
 test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=0)
 
-inputs, labels = next(iter(test_loader))
+inputs = next(iter(test_loader))
 inputs = inputs.to(device)
-labels = labels.to(device)
+preds = model(inputs)
 
-pred = model(inputs)
+preds = preds.data.cpu().numpy()
+print(preds.shape)
 
-pred = pred.data.cpu().numpy()
-print(pred.shape)
+# Convert tensors back to arrays
 
-# Change channel-order and make 3 channels for matplot
-input_images_rgb = [reverse_transform(x) for x in inputs.cpu()]
+preds = preds.numpy()
+preds = [simulation.twod_to_oned(pred) for pred in preds]
 
-# Map each channel (i.e. class) to each color
-target_masks_rgb = [helper.masks_to_colorimg(x) for x in labels.cpu().numpy()]
-pred_rgb = [helper.masks_to_colorimg(x) for x in pred]
-
-helper.plot_side_by_side([input_images_rgb, target_masks_rgb, pred_rgb])
-#plt.show()
-plt.savefig(os.path.join(OUTPUT, 'prediction.png'))
-plt.clf()
+for i,pred in enumerate(preds):
+    plt.imshow(pred, cmap='gray')
+    plt.savefig(os.path.join(OUTPUT, f'prediction{i+1}.png'))
+    #plt.show()
+    plt.clf()
