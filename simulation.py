@@ -1,5 +1,4 @@
 import numpy as np
-import tifffile as tiff
 import os
 import albumentations as A
 import cv2
@@ -26,7 +25,7 @@ def get_aug_train(p=1.0):
         A.HorizontalFlip(),
         A.VerticalFlip(),
         A.RandomRotate90(),
-        A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=15, p=0.9, 
+        A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=360, p=0.9, 
                          border_mode=cv2.BORDER_REFLECT),
         A.PadIfNeeded(min_height=572, min_width=572, p=1),
         A.OneOf([
@@ -37,7 +36,7 @@ def get_aug_train(p=1.0):
         A.OneOf([
             A.CLAHE(clip_limit=2),
             A.RandomBrightnessContrast(),            
-        ], p=0.5),
+        ], p=0.7),
     ], p=p)
 
 def get_aug_test(p=1.0):

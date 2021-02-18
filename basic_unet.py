@@ -103,7 +103,7 @@ image_datasets = {
     'train': train_set, 'val': val_set
 }
 
-batch_size = 5
+batch_size = 1
 
 dataloaders = {
     'train': DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0),
@@ -263,7 +263,7 @@ print(device)
 model = pytorch_unet.UNet().to(device)
 
 # Observe that all parameters are being optimized
-optimizer_ft = optim.Adam(model.parameters(), lr=1e-4)
+optimizer_ft = optim.SGD(model.parameters(), lr=1e-3, momentum = 0.99)
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=1500, gamma=0.1)
 
