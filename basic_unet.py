@@ -33,6 +33,10 @@ SEED = 2001
 random.seed(SEED)
 torch.manual_seed(SEED)
 
+ids = np.array([f'image_{i}.png' for i in range(1,31)])
+random.shuffle(ids)
+split = int(0.8 * len(ids))
+
 ###########################################################
 # Define dataset
 ###########################################################
@@ -40,9 +44,6 @@ torch.manual_seed(SEED)
 class ISBI_Dataset(Dataset):
 
     def __init__(self, train = True, tfms=None):
-        ids = np.array([f'image_{i}.png' for i in range(1,31)])
-        random.shuffle(ids)
-        split = int(0.8 * len(ids))
         self.fnames = ids[:split] if train else ids[split:]
         self.tfms = tfms
             
