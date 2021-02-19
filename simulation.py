@@ -2,7 +2,6 @@ import numpy as np
 import os
 import albumentations as A
 import cv2
-import random
 import copy
 
 def oned_to_twod(image):
@@ -31,7 +30,6 @@ def get_aug_train(p=1.0):
         A.OneOf([
             A.OpticalDistortion(p=0.7),
             A.GridDistortion(p=0.3),
-            A.IAAPiecewiseAffine(p=0.7),
         ], p=1.0),
         A.OneOf([
             A.CLAHE(clip_limit=2),
