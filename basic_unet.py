@@ -29,7 +29,9 @@ TRAIN = 'train'
 MASKS = 'masks'
 TEST = 'test'
 OUTPUT = 'output'
-random.seed(2021)
+SEED = 2001
+random.seed(SEED)
+torch.manual_seed(SEED)
 
 ###########################################################
 # Define dataset
