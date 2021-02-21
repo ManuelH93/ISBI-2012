@@ -2,85 +2,76 @@ import torch
 import os
 import pytorch_unet
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
 import simulation
 import numpy as np
-import helper
 import matplotlib.pyplot as plt
-import random
+import cv2
 
 
 MODEL = 'trained_model'
+MODEL_VERSION = '2021.02.18'
 
-DATA = 'raw_data'
-OUTPUT = 'output'
-random.seed(2021)
+DATA = 'processed_data'
+TEST = 'test'
+
+PRED_THRESHOLD = 2
 
 # Load data
-imgs_train, masks_train, imgs_test, masks_test = simulation.load_data(DATA)
 
-class ISBI_Dataset(Dataset):
-    def __init__(self, count, imgs_train, masks, train, transform=None):
-        self.input_images, self.target_masks = simulation.reshape_images(imgs_train, masks, train, count=count)        
-        self.transform = transform
-    
+class ISBI_Dataset_test(Dataset):
+
+    def __init__(self, tfms=None):
+        self.fnames = np.array([f'image_{i}.png' for i in range(1,31)])
+        self.tfms = tfms
+            
     def __len__(self):
-        return len(self.input_images)
+        return len(self.fnames)
     
-    def __getitem__(self, idx):        
-        image = self.input_images[idx]
-        mask = self.target_masks[idx]
-        if self.transform:
-            image = self.transform(image)
-        
-        return [image, mask]
+    def __getitem__(self, idx):
+        fname = self.fnames[idx]
+        img = cv2.imread(os.path.join(DATA,TEST,fname), cv2.IMREAD_GRAYSCALE)
 
-trans = transforms.Compose([
-    transforms.ToTensor(),
-])
+        if self.tfms is not None:
+            augmented = self.tfms(image=img)
+            img = augmented['image']
 
-def reverse_transform(inp):
-    inp = inp.numpy().transpose((1, 2, 0))
-    inp = np.clip(inp, 0, 1)
-    inp = (inp * 255).astype(np.uint8)
-    
-    return inp
-
+        img = img/255.0
+        img = np.expand_dims(img, 0)
+        img = torch.from_numpy(img.astype(np.float32, copy=False))        
+        return img
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-num_class = 1
+model = pytorch_unet.UNet().to(device)
 
-model = pytorch_unet.UNet(num_class).to(device)
-
-model.load_state_dict(torch.load(os.path.join(MODEL,'bst_unet - 2021.01.10.model'), map_location=torch.device(device)))
-
-
+model.load_state_dict(torch.load(os.path.join(MODEL,MODEL_VERSION,'bst_unet.model'), map_location=torch.device(device)))
 
 model.eval()   # Set model to evaluate mode
 
-test_dataset = ISBI_Dataset(3, imgs_test, masks_test, train=False, transform = trans)
-test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=0)
+test_dataset = ISBI_Dataset_test(tfms=simulation.get_aug_test())
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0)
         
-inputs, labels = next(iter(test_loader))
+inputs = next(iter(test_loader))
 inputs = inputs.to(device)
-labels = labels.to(device)
+preds = model(inputs)
 
-pred = model(inputs)
+preds = preds.data.cpu().numpy()
+print(preds.shape)
 
-pred = pred.data.cpu().numpy()
-print(pred.shape)
+# Convert tensors back to arrays
 
-# Change channel-order and make 3 channels for matplot
-input_images_rgb = [reverse_transform(x) for x in inputs.cpu()]
+preds = [simulation.twod_to_oned(pred) for pred in preds]
 
-# Map each channel (i.e. class) to each color
-target_masks_rgb = [helper.masks_to_colorimg(x) for x in labels.cpu().numpy()]
-pred_rgb = [helper.masks_to_colorimg(x) for x in pred]
+for prediction in preds:
+    # Replace 1s with 0s and 0s with 1s
+    indices_one = prediction >= PRED_THRESHOLD
+    indices_zero = prediction < PRED_THRESHOLD
+    prediction[indices_one] = 1
+    prediction[indices_zero] = 0
 
-helper.plot_side_by_side([input_images_rgb, target_masks_rgb, pred_rgb])
-#plt.show()
-plt.savefig(os.path.join(OUTPUT,'prediction.png'))
-plt.clf()
-
+for i,pred in enumerate(preds):
+    plt.imshow(pred, cmap='gray')
+    #plt.savefig(os.path.join(OUTPUT, f'prediction{i+1}.png'))
+    plt.show()
+    plt.clf()
