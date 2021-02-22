@@ -6,6 +6,7 @@ import helper
 import simulation
 import random
 import imgaug
+import torch
 
 ###########################################################
 # Define parameters
@@ -107,7 +108,6 @@ plt.clf()
 
 
 from torchsummary import summary
-import torch
 import torch.nn as nn
 import pytorch_unet
 
