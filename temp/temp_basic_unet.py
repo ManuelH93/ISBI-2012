@@ -240,7 +240,7 @@ model = temp_pytorch_unet.UNet(num_class).to(device)
 # Observe that all parameters are being optimized
 optimizer_ft = optim.Adam(model.parameters(), lr=1e-4)
 
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=500, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=1000, gamma=0.1)
 
 model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=1000)
 
