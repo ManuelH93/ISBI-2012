@@ -5,8 +5,6 @@ import numpy as np
 import helper
 import simulation
 import random
-import imgaug
-import torch
 
 ###########################################################
 # Define parameters
@@ -14,11 +12,7 @@ import torch
 
 DATA = 'raw_data'
 OUTPUT = 'output'
-SEED = 2012
-random.seed(SEED)
-torch.manual_seed(SEED)
-imgaug.random.seed(SEED)
-
+random.seed(2021)
 
 
 # Load data
@@ -108,6 +102,7 @@ plt.clf()
 
 
 from torchsummary import summary
+import torch
 import torch.nn as nn
 import pytorch_unet
 
