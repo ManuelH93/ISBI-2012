@@ -21,9 +21,7 @@ SEED = 2001
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-ids = np.array([f'image_{i}.png' for i in range(1,31)])
-random.shuffle(ids)
-split = int(0.8 * len(ids))
+ids = np.array([f'image_{i}.png' for i in range(1,4)])
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, datasets, models
@@ -31,7 +29,7 @@ from torchvision import transforms, datasets, models
 class ISBI_Dataset(Dataset):
 
     def __init__(self, train = True, tfms=None):
-        self.fnames = ids[:split] if train else ids[split:]
+        self.fnames = ids
         self.tfms = tfms
             
     def __len__(self):
@@ -89,7 +87,7 @@ image_datasets = {
     'train': train_set, 'val': val_set
 }
 
-batch_size = 5
+batch_size = 1
 
 dataloaders = {
     'train': DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0),
@@ -119,7 +117,7 @@ print(inputs.shape, masks.shape)
 for x in [inputs.numpy(), masks.numpy()]:
     print(x.min(), x.max(), x.mean(), x.std())
 
-plt.imshow(reverse_transform(inputs[3]))
+plt.imshow(reverse_transform(inputs[0]))
 #plt.show()
 plt.clf()
 
@@ -244,7 +242,7 @@ optimizer_ft = optim.Adam(model.parameters(), lr=1e-4)
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=25, gamma=0.1)
 
-model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=3000)
+model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=1)
 
 # prediction
 
