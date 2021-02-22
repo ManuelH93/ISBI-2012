@@ -2,65 +2,88 @@ import os,sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import helper
-import simulation
+import temp_helper
+import temp_simulation
 import random
+import torch
+import cv2
 
 ###########################################################
 # Define parameters
 ###########################################################
 
-DATA = 'raw_data'
+DATA = 'processed_data'
+TRAIN = 'train'
+MASKS = 'masks'
+TEST = 'test'
 OUTPUT = 'output'
-random.seed(2021)
+SEED = 2001
+random.seed(SEED)
+torch.manual_seed(SEED)
 
-
-# Load data
-imgs_train, masks_train, imgs_test, masks_test = simulation.load_data(DATA)
-# Generate some random images based on raw data
-input_images, target_masks = simulation.reshape_images(imgs_train, masks_train, count=3, train=True)
-
-for x in [input_images, target_masks]:
-    print(x.shape)
-    print(x.min(), x.max())
-
-# Change channel-order and make 3 channels for matplot
-input_images_rgb = [x.astype(np.uint8) for x in input_images]
-
-# Map each channel (i.e. class) to each color
-target_masks_rgb = [helper.masks_to_colorimg(x) for x in target_masks]
-
-# Left: Input image, Right: Target mask (Ground-truth)
-helper.plot_side_by_side([input_images_rgb, target_masks_rgb])
-#plt.show()
-plt.clf()
+ids = np.array([f'image_{i}.png' for i in range(1,31)])
+random.shuffle(ids)
+split = int(0.8 * len(ids))
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, datasets, models
 
 class ISBI_Dataset(Dataset):
-    def __init__(self, count, imgs_train, masks, train, transform=None):
-        self.input_images, self.target_masks = simulation.reshape_images(imgs_train, masks, train, count=count)        
-        self.transform = transform
-    
+
+    def __init__(self, train = True, tfms=None):
+        self.fnames = ids[:split] if train else ids[split:]
+        self.tfms = tfms
+            
     def __len__(self):
-        return len(self.input_images)
+        return len(self.fnames)
     
-    def __getitem__(self, idx):        
-        image = self.input_images[idx]
-        mask = self.target_masks[idx]
-        if self.transform:
-            image = self.transform(image)
+    def __getitem__(self, idx):
+        fname = self.fnames[idx]
+        img = cv2.imread(os.path.join(DATA,TRAIN,fname), cv2.IMREAD_GRAYSCALE)
+        mask = cv2.imread(os.path.join(DATA,MASKS,fname),cv2.IMREAD_GRAYSCALE)
+
+        if self.tfms is not None:
+            augmented = self.tfms(image=img,mask=mask)
+            img,mask = augmented['image'],augmented['mask']
+
+        img = img/255.0
+        img = temp_simulation.oned_to_threed(img)
+        img = torch.from_numpy(img.astype(np.float32, copy=False))
+
+        mask = mask/255.0
+        mask = np.expand_dims(mask, 0)
         
-        return [image, mask]
+        return img, mask
 
-# use same transform for train/val for this example
-trans = transforms.Compose([
-    transforms.ToTensor(),
-])
+###########################################################
+# Test if dataset load works
+###########################################################
 
-train_set = ISBI_Dataset(2000, imgs_train, masks_train, train=True, transform = trans)
-val_set = ISBI_Dataset(200, imgs_train, masks_train, train=True, transform = trans)
+#ds = ISBI_Dataset(tfms = temp_simulation.get_aug_train())
+#dl = DataLoader(ds,batch_size=4)
+#imgs,masks = next(iter(dl))
+#print(imgs.shape, masks.shape)
+#print(imgs.dtype, masks.dtype)
+#for x in [imgs.numpy(), masks.numpy()]:
+#    print(x.min(), x.max(), x.mean(), x.std())
+
+# Convert tensors back to arrays
+#imgs = imgs.numpy()
+#imgs = np.squeeze(imgs)
+#imgs = imgs.transpose([0, 2, 3, 1])
+#masks = masks.numpy()
+#masks= np.squeeze(masks)
+
+#for image, mask in zip(imgs,masks):
+#    plt.imshow(image)
+#    plt.show()
+#    plt.clf()
+#    plt.imshow(mask, cmap='gray')
+#    plt.show()
+#    plt.clf()
+
+train_set = ISBI_Dataset(train=True, tfms=temp_simulation.get_aug_train())
+val_set = ISBI_Dataset(train=False, tfms=temp_simulation.get_aug_train())
 
 image_datasets = {
     'train': train_set, 'val': val_set
@@ -104,11 +127,11 @@ plt.clf()
 from torchsummary import summary
 import torch
 import torch.nn as nn
-import pytorch_unet
+import temp_pytorch_unet
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-model = pytorch_unet.UNet(1)
+model = temp_pytorch_unet.UNet(1)
 model = model.to(device)
 
 summary(model, input_size=(3, 576, 576))
@@ -116,7 +139,7 @@ summary(model, input_size=(3, 576, 576))
 
 from collections import defaultdict
 import torch.nn.functional as F
-from loss import dice_loss
+from temp_loss import dice_loss
 
 def calc_loss(pred, target, metrics, bce_weight=0.5):
     bce = F.binary_cross_entropy_with_logits(pred, target)
@@ -214,27 +237,48 @@ print(device)
 
 num_class = 1
 
-model = pytorch_unet.UNet(num_class).to(device)
+model = temp_pytorch_unet.UNet(num_class).to(device)
 
 # Observe that all parameters are being optimized
 optimizer_ft = optim.Adam(model.parameters(), lr=1e-4)
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=25, gamma=0.1)
 
-model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=40)
+model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=3000)
 
 # prediction
 
 import math
 
+class ISBI_Dataset_test(Dataset):
+
+    def __init__(self, tfms=None):
+        self.fnames = np.array([f'image_{i}.png' for i in range(1,31)])
+        self.tfms = tfms
+            
+    def __len__(self):
+        return len(self.fnames)
+    
+    def __getitem__(self, idx):
+        fname = self.fnames[idx]
+        img = cv2.imread(os.path.join(DATA,TEST,fname), cv2.IMREAD_GRAYSCALE)
+
+        if self.tfms is not None:
+            augmented = self.tfms(image=img)
+            img = augmented['image']
+
+        img = img/255.0
+        img = temp_simulation.oned_to_threed(img)
+        img = torch.from_numpy(img.astype(np.float32, copy=False))     
+        return img
+
 model.eval()   # Set model to evaluate mode
 
-test_dataset = ISBI_Dataset(3, imgs_test, masks_test, train=False, transform = trans)
+test_dataset = ISBI_Dataset_test(tfms=temp_simulation.get_aug_test())
 test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=0)
 
-inputs, labels = next(iter(test_loader))
+inputs = next(iter(test_loader))
 inputs = inputs.to(device)
-labels = labels.to(device)
 
 pred = model(inputs)
 
@@ -245,10 +289,9 @@ print(pred.shape)
 input_images_rgb = [reverse_transform(x) for x in inputs.cpu()]
 
 # Map each channel (i.e. class) to each color
-target_masks_rgb = [helper.masks_to_colorimg(x) for x in labels.cpu().numpy()]
-pred_rgb = [helper.masks_to_colorimg(x) for x in pred]
+pred_rgb = [temp_helper.masks_to_colorimg(x) for x in pred]
 
-helper.plot_side_by_side([input_images_rgb, target_masks_rgb, pred_rgb])
-#plt.show()
-plt.savefig(os.path.join(OUTPUT, 'prediction.png'))
-plt.clf()
+for i, mask in enumerate(pred_rgb):
+    plt.imshow(mask)
+    plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
+    plt.clf()
