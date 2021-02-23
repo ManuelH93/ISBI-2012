@@ -2,7 +2,6 @@ import os,sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import simulation
 import random
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -15,7 +14,10 @@ import copy
 import cv2
 from collections import defaultdict
 import torch.nn.functional as F
+
 from loss import dice_loss
+import simulation
+import pytorch_unet
 
 ###########################################################
 # Define parameters
@@ -80,12 +82,11 @@ class ISBI_Dataset(Dataset):
 # Convert tensors back to arrays
 
 #imgs = imgs.numpy()
-#imgs = np.squeeze(imgs)
 #masks = masks.numpy()
 #masks = [simulation.twod_to_oned(mask) for mask in masks]
 
 #for image, mask in zip(imgs,masks):
-#    plt.imshow(image, cmap='gray')
+#    plt.imshow(np.squeeze(image), cmap='gray')
 #    plt.show()
 #    plt.clf()
 #    plt.imshow(mask, cmap='gray')
@@ -226,9 +227,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-num_class = 1
-
-model = pytorch_unet.UNet(num_class).to(device)
+model = pytorch_unet.UNet().to(device)
 
 # Observe that all parameters are being optimized
 optimizer_ft = optim.Adam(model.parameters(), lr=1e-4)
