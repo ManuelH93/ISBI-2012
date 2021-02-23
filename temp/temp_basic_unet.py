@@ -2,7 +2,6 @@ import os,sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import temp_helper
 import temp_simulation
 import random
 import torch
@@ -102,24 +101,6 @@ print(dataset_sizes)
 
 
 import torchvision.utils
-
-def reverse_transform(inp):
-    inp = inp.numpy().transpose((1, 2, 0))
-    inp = np.clip(inp, 0, 1)
-    inp = (inp * 255).astype(np.uint8)
-    
-    return inp
-
-# Get a batch of training data
-inputs, masks = next(iter(dataloaders['train']))
-
-print(inputs.shape, masks.shape)
-for x in [inputs.numpy(), masks.numpy()]:
-    print(x.min(), x.max(), x.mean(), x.std())
-
-plt.imshow(reverse_transform(inputs[3]))
-#plt.show()
-plt.clf()
 
 
 from torchsummary import summary
@@ -280,16 +261,18 @@ inputs = inputs.to(device)
 
 pred = model(inputs)
 
-pred = pred.data.cpu().numpy()
-print(pred.shape)
+preds = pred.data.cpu().numpy()
+print(preds.shape)
 
-# Change channel-order and make 3 channels for matplot
-input_images_rgb = [reverse_transform(x) for x in inputs.cpu()]
+for prediction in preds:
+    # Replace 1s with 0s and 0s with 1s
+    indices_one = prediction >= 0
+    indices_zero = prediction < 0
+    prediction[indices_one] = 1
+    prediction[indices_zero] = 0
 
-# Map each channel (i.e. class) to each color
-pred_rgb = [temp_helper.masks_to_colorimg(x) for x in pred]
-
-for i, mask in enumerate(pred_rgb):
-    plt.imshow(mask)
+for i, mask in enumerate(preds):
+    plt.imshow(np.squeeze(mask), cmap='gray')
+    #plt.show()
     plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
     plt.clf()

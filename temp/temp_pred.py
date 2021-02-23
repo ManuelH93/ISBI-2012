@@ -6,7 +6,6 @@ import temp_simulation
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-import temp_helper
 
 
 MODEL = 'trained_model'
