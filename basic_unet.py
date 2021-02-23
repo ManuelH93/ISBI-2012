@@ -35,7 +35,7 @@ torch.manual_seed(SEED)
 
 ids = np.array([f'image_{i}.png' for i in range(1,31)])
 random.shuffle(ids)
-split = int(0.8 * len(ids))
+split = int(0.8 * len(ids)) # //MH: No longer shuffle and split data
 
 ###########################################################
 # Define dataset
@@ -44,7 +44,7 @@ split = int(0.8 * len(ids))
 class ISBI_Dataset(Dataset):
 
     def __init__(self, train = True, tfms=None):
-        self.fnames = ids[:split] if train else ids[split:]
+        self.fnames = ids[:split] if train else ids[split:] # //MH: No longer shuffle and split data
         self.tfms = tfms
             
     def __len__(self):
@@ -312,7 +312,7 @@ print(preds.shape)
 
 # Convert tensors back to arrays
 
-preds = [simulation.twod_to_oned(pred) for pred in preds]
+preds = [simulation.twod_to_oned(pred) for pred in preds] # //MH: need to interpret utils
 
 for i,pred in enumerate(preds):
     plt.imshow(pred, cmap='gray')
