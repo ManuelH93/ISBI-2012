@@ -286,6 +286,6 @@ for prediction in preds:
 
 for i, mask in enumerate(preds):
     plt.imshow(np.squeeze(mask), cmap='gray')
-    plt.show()
+    #plt.show()
     plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
     plt.clf()
