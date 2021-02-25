@@ -216,17 +216,18 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
-                        
-                scheduler.step()
+
+                
                 # statistics
                 epoch_samples += inputs.size(0)
 
             print_metrics(metrics, epoch_samples, phase)
             epoch_loss = metrics['loss'] / epoch_samples
            
-            # collect statistics for figure
+            # collect statistics for figure and take lr step
             if phase == 'train':
                 train_loss.append(metrics['loss']/epoch_samples)
+                scheduler.step()
             else:
                 val_loss.append(metrics['loss']/epoch_samples)
 
