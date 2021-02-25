@@ -229,7 +229,7 @@ print(device)
 model = pytorch_unet.UNet().to(device)
 
 # Observe that all parameters are being optimized
-optimizer_ft = optim.SGD(model.parameters(), lr=1e-1, momentum = 0.99)
+optimizer_ft = optim.SGD(model.parameters(), lr=1e-2, momentum = 0.99)
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=1000, gamma=0.1)
 
