@@ -11,7 +11,7 @@ from torchvision import transforms, datasets, models
 from torchsummary import summary
 import torch.optim as optim
 from torch.optim import lr_scheduler
-import torch.nn as nn
+import torch.nn as nn #//MH can be removed
 from collections import defaultdict
 import torch.nn.functional as F
 
@@ -86,6 +86,7 @@ class ISBI_Dataset(Dataset):
 #imgs = np.squeeze(imgs)
 #masks = masks.numpy()
 #masks = [simulation.twod_to_oned(mask) for mask in masks]
+# MH// Remove twod_to_one
 
 #for image, mask in zip(imgs,masks):
 #    plt.imshow(image, cmap='gray')
