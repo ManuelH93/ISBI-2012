@@ -1,17 +1,16 @@
 import os,sys
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import cv2
+import time
+import copy
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, datasets, models
 from torchsummary import summary
 import torch.optim as optim
 from torch.optim import lr_scheduler
-import time
-import copy
-import cv2
 from collections import defaultdict
 import torch.nn.functional as F
 
@@ -83,7 +82,7 @@ class ISBI_Dataset(Dataset):
 
 #imgs = imgs.numpy()
 #masks = masks.numpy()
-#masks = [simulation.twod_to_oned(mask) for mask in masks]
+#masks = [mask[1] for mask in masks]
 
 #for image, mask in zip(imgs,masks):
 #    plt.imshow(np.squeeze(image), cmap='gray')
@@ -230,7 +229,7 @@ print(device)
 model = pytorch_unet.UNet().to(device)
 
 # Observe that all parameters are being optimized
-optimizer_ft = optim.Adam(model.parameters(), lr=1e-4)
+optimizer_ft = optim.SGD(model.parameters(), lr=1e-1, momentum = 0.99)
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=1000, gamma=0.1)
 
@@ -291,5 +290,5 @@ for prediction in preds:
 for i, mask in enumerate(preds):
     plt.imshow(mask, cmap='gray')
     plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
-    plt.show()
+    #plt.show()
     plt.clf()

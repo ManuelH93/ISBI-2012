@@ -14,10 +14,6 @@ def oned_to_twod(image):
     mask = np.concatenate((image, membrane), axis=0)
     return mask
 
-def twod_to_oned(image):
-    membrane = image[1]
-    return membrane
-
 def get_aug_train(p=1.0):
     return A.Compose([
         A.HorizontalFlip(),
