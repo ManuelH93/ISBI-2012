@@ -216,8 +216,8 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
-                        scheduler.step()
-
+                        
+                scheduler.step()
                 # statistics
                 epoch_samples += inputs.size(0)
 
