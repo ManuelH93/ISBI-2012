@@ -9,14 +9,14 @@ import cv2
 import copy
 
 MODEL = 'trained_model'
-MODEL_VERSION = '2021.02.18'
+MODEL_VERSION = '2021.02.24'
 
 DATA = 'processed_data'
 TEST = 'test'
 OUTPUT = 'output'
 
-PRED_THRESHOLD_v1 = 0.5
-PRED_THRESHOLD_v2 = 0.5
+PRED_THRESHOLD_v1 = 0
+PRED_THRESHOLD_v2 = 0
 
 # Load data
 
@@ -60,58 +60,24 @@ inputs = inputs.to(device)
 
 pred = model(inputs)
 
-preds = pred.data.cpu().numpy()
+preds = pred.data.cpu()
 print(preds.shape)
 
-preds_v1 = copy.deepcopy(preds)
-preds_v2 = copy.deepcopy(preds)
+# Create class porbabilities
+preds = preds.softmax(dim = 1).numpy()
 
-#########################################################
-# Use only class 1
-#########################################################
+# Keep probabilities for membrane only
+preds = [pred[1] for pred in preds]
 
-preds_v1 = [simulation.twod_to_oned(pred) for pred in preds_v1]
-
-for prediction in preds_v1:
-    # Replace 1s with 0s and 0s with 1s
-    indices_one = prediction >= PRED_THRESHOLD_v1
-    indices_zero = prediction < PRED_THRESHOLD_v1
+for prediction in preds:
+    # Create membrane and background based on probabilities
+    indices_one = prediction >= 0.5
+    indices_zero = prediction < 0.5
     prediction[indices_one] = 1
     prediction[indices_zero] = 0
 
-for i, mask in enumerate(preds_v1):
+for i, mask in enumerate(preds):
     plt.imshow(mask, cmap='gray')
-    plt.savefig(os.path.join(OUTPUT, f'mask_{i}_v1.png'))
-    #plt.show()
-    plt.clf()
-
-#########################################################
-# Use predictions for both classes
-#########################################################
-
-# //MH: try using softmax
-
-for prediction in preds_v2:
-    # Turn utils into 0s and 1s
-    # For first class, 1 is background and 0 membrane.
-    # We want to switch this around
-    indices_zero = prediction[0] >= PRED_THRESHOLD_v2
-    indices_one = prediction[0] < PRED_THRESHOLD_v2
-    prediction[0][indices_one] = 1
-    prediction[0][indices_zero] = 0
-    
-    indices_one = prediction[1] >= PRED_THRESHOLD_v2
-    indices_zero = prediction[1] < PRED_THRESHOLD_v2
-    prediction[1][indices_one] = 1
-    prediction[1][indices_zero] = 0
-
-masks = []
-for prediction in preds_v2:
-    mask = (prediction[0]+prediction[1])/2
-    masks.append(mask)
-
-for i, mask in enumerate(masks):
-    plt.imshow(mask, cmap='gray')
-    plt.savefig(os.path.join(OUTPUT, f'mask_{i}_v2.png'))
-    #plt.show()
+    plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
+    plt.show()
     plt.clf()

@@ -272,20 +272,24 @@ inputs = inputs.to(device)
 
 pred = model(inputs)
 
-preds = pred.data.cpu().numpy()
+preds = pred.data.cpu()
 print(preds.shape)
 
-preds = [simulation.twod_to_oned(pred) for pred in preds]
+# Create class porbabilities
+preds = preds.softmax(dim = 1).numpy()
+
+# Keep probabilities for membrane only
+preds = [pred[1] for pred in preds]
 
 for prediction in preds:
-    # Replace 1s with 0s and 0s with 1s
-    indices_one = prediction >= 0
-    indices_zero = prediction < 0
+    # Create membrane and background based on probabilities
+    indices_one = prediction >= 0.5
+    indices_zero = prediction < 0.5
     prediction[indices_one] = 1
     prediction[indices_zero] = 0
 
 for i, mask in enumerate(preds):
-    plt.imshow(np.squeeze(mask), cmap='gray')
-    #plt.show()
+    plt.imshow(mask, cmap='gray')
     plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
+    plt.show()
     plt.clf()
