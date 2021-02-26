@@ -1,52 +1,26 @@
-import os
-import matplotlib.pyplot as plt
-import numpy as np
-import random
-import cv2
-import time
-import copy
 import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, datasets, models
-from torchsummary import summary
-import torch.optim as optim
-from torch.optim import lr_scheduler
-import torch.nn as nn
-from collections import defaultdict
-import torch.nn.functional as F
-#import imgaug
-
-
-from loss import dice_loss
-import simulation
+import os
 import pytorch_unet
+from torch.utils.data import Dataset, DataLoader
+import simulation
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+import copy
 
-###########################################################
-# Define parameters
-###########################################################
+MODEL = 'trained_model'
+MODEL_VERSION = '2021.02.25_v2_and_graph_stop'
 
 DATA = 'processed_data'
-TRAIN = 'train'
-MASKS = 'masks'
 TEST = 'test'
 OUTPUT = 'output'
-SEED = 2002
-random.seed(SEED)
-torch.manual_seed(SEED)
-#imgaug.random.seed(SEED)
 
-ids = np.array([f'image_{i}.png' for i in range(1,31)])
-random.shuffle(ids)
-split = int(0.8 * len(ids))
+# Load data
 
-###########################################################
-# Define dataset
-###########################################################
+class ISBI_Dataset_test(Dataset):
 
-class ISBI_Dataset(Dataset):
-
-    def __init__(self, train = True, tfms=None):
-        self.fnames = ids[:split] if train else ids[split:]
+    def __init__(self, tfms=None):
+        self.fnames = np.array([f'image_{i}.png' for i in range(1,31)])
         self.tfms = tfms
             
     def __len__(self):
@@ -54,81 +28,53 @@ class ISBI_Dataset(Dataset):
     
     def __getitem__(self, idx):
         fname = self.fnames[idx]
-        print(fname)
-        img = cv2.imread(os.path.join(DATA,TRAIN,fname), cv2.IMREAD_GRAYSCALE)
-        mask = cv2.imread(os.path.join(DATA,MASKS,fname),cv2.IMREAD_GRAYSCALE)
+        img = cv2.imread(os.path.join(DATA,TEST,fname), cv2.IMREAD_GRAYSCALE)
 
         if self.tfms is not None:
-            augmented = self.tfms(image=img,mask=mask)
-            img,mask = augmented['image'],augmented['mask']
+            augmented = self.tfms(image=img)
+            img = augmented['image']
 
         img = img/255.0
         img = np.expand_dims(img, 0)
-        img = torch.from_numpy(img.astype(np.float32, copy=False))
+        img = torch.from_numpy(img.astype(np.float32, copy=False))  
+        return img
 
-        mask = mask/255.0
-        mask = simulation.center_crop(mask)
-        mask = simulation.oned_to_twod(mask)
-        mask = torch.from_numpy(mask.astype(np.float32, copy=False))
-        
-        return img, mask
 
-###########################################################
-# Test if dataset load works
-###########################################################
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
 
-train_set = ISBI_Dataset(train=True, tfms=simulation.get_aug_train())
-val_set = ISBI_Dataset(train=False, tfms=simulation.get_aug_train())
+model = pytorch_unet.UNet().to(device)
 
-image_datasets = {
-    'train': train_set, 'val': val_set
-}
+model.load_state_dict(torch.load(os.path.join(MODEL,MODEL_VERSION,'bst_unet.model'), map_location=torch.device(device)))
 
-batch_size = 3
+model.eval()   # Set model to evaluate mode
 
-dataloaders = {
-    'train': DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0),
-    'val': DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=0)
-}
+test_dataset = ISBI_Dataset_test(tfms=simulation.get_aug_test())
+test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=0)
 
-dataset_sizes = {
-    x: len(image_datasets[x]) for x in image_datasets.keys()
-}
+inputs = next(iter(test_loader))
+inputs = inputs.to(device)
 
-print(dataset_sizes)
+pred = model(inputs)
 
-# Get a batch of training data
-inputs, masks = next(iter(dataloaders['train']))
-print(inputs.dtype)
-print(masks.dtype)
+preds = pred.data.cpu()
+print(preds.shape)
 
-print(inputs.shape, masks.shape)
-for x in [inputs.numpy(), masks.numpy()]:
-    print(x.shape)
-    print(x.min(), x.max(), x.mean(), x.std())
+# Create class porbabilities
+preds = preds.softmax(dim = 1).numpy()
 
-print('understand input image')
-image_l_1 = inputs.numpy()[0,0,:,:]
-print(image_l_1.shape)
-print(image_l_1[170:180, 150:160])
+# Keep probabilities for membrane only
+preds = [pred[1] for pred in preds]
 
-print('understand mask')
+for prediction in preds:
+    # Create membrane and background based on probabilities
+    indices_one = prediction >= 0.5
+    indices_zero = prediction < 0.5
+    prediction[indices_one] = 1
+    prediction[indices_zero] = 0
 
-mask_l_1 = masks.numpy()[0,0,:,:]
-mask_l_2 = masks.numpy()[0,1,:,:]
-print(mask_l_1.shape)
-print(mask_l_1[9:19, 330:343])
-print(mask_l_2[9:19, 330:343])
-
-# Convert tensors back to arrays
-
-imgs = inputs.numpy()
-masks = masks.numpy()
-masks = [simulation.twod_to_oned(mask) for mask in masks]
-
-plt.imshow(np.squeeze(imgs[0]), cmap='gray')
-plt.show()
-plt.clf()
-plt.imshow(masks[0], cmap='gray')
-plt.show()
-plt.clf()
+for i, mask in enumerate(preds):
+    plt.imshow(mask, cmap='gray')
+    plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
+    plt.show()
+    plt.clf()
