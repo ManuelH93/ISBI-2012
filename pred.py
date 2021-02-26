@@ -9,7 +9,7 @@ import cv2
 import copy
 
 MODEL = 'trained_model'
-MODEL_VERSION = '2021.02.25_v2_and_graph_stop'
+MODEL_VERSION = '2021.02.24_and_model'
 
 DATA = 'processed_data'
 TEST = 'test'
