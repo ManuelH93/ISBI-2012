@@ -225,17 +225,17 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
-                        scheduler.step()
-
+          
                 # statistics
                 epoch_samples += inputs.size(0)
 
             print_metrics(metrics, epoch_samples, phase)
             epoch_loss = metrics['loss'] / epoch_samples
            
-            # collect statistics for figure
+            # collect statistics for figure and take lr step
             if phase == 'train':
                 train_loss.append(metrics['loss']/epoch_samples)
+                scheduler.step()
             else:
                 val_loss.append(metrics['loss']/epoch_samples)
 
@@ -247,7 +247,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
                 epochs_no_improve = 0
             elif phase == 'val' and epoch_loss >= best_loss:
                 epochs_no_improve += 1
-                if epochs_no_improve == 100:
+                if epochs_no_improve == 500:
                     print('Early stopping!')
                     early_stopping = True
 
