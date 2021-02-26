@@ -285,11 +285,11 @@ print(device)
 model = pytorch_unet.UNet().to(device)
 
 # Observe that all parameters are being optimized
-optimizer_ft = optim.SGD(model.parameters(), lr=1e-3, momentum = 0.99)
+optimizer_ft = optim.SGD(model.parameters(), lr=1e-2, momentum = 0.99)
 
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=1500, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=1000, gamma=0.1)
 
-model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=3000)
+model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=1000)
 
 ###########################################################
 # Predict
@@ -324,17 +324,26 @@ test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=
 
 inputs = next(iter(test_loader))
 inputs = inputs.to(device)
-preds = model(inputs)
 
-preds = preds.data.cpu().numpy()
+pred = model(inputs)
+preds = pred.data.cpu()
 print(preds.shape)
 
-# Convert tensors back to arrays
+# Create class porbabilities
+preds = preds.softmax(dim = 1).numpy()
 
-preds = [simulation.twod_to_oned(pred) for pred in preds] # //MH: need to interpret utils
+# Keep probabilities for membrane only
+preds = [pred[1] for pred in preds]
 
-for i,pred in enumerate(preds):
-    plt.imshow(pred, cmap='gray')
-    plt.savefig(os.path.join(OUTPUT, f'prediction{i+1}.png'))
+for prediction in preds:
+    # Create membrane and background based on probabilities
+    indices_one = prediction >= 0.5
+    indices_zero = prediction < 0.5
+    prediction[indices_one] = 1
+    prediction[indices_zero] = 0
+
+for i, mask in enumerate(preds):
+    plt.imshow(mask, cmap='gray')
+    plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
     #plt.show()
     plt.clf()
