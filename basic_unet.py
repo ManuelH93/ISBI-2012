@@ -28,13 +28,32 @@ TRAIN = 'train'
 MASKS = 'masks'
 TEST = 'test'
 OUTPUT = 'output'
-SEED = 2001
-random.seed(SEED)
-torch.manual_seed(SEED)
-
+SEED = 'some'
 ids = np.array([f'image_{i}.png' for i in range(1,31)])
-random.shuffle(ids)
-split = int(0.8 * len(ids)) # //MH: No longer shuffle and split data
+
+###########################################################
+# Set seed
+###########################################################
+
+def seed_all(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+def seed_some(seed):
+    random.seed(seed)
+    torch.manual_seed(seed)
+
+if SEED == 'all':
+    print("[ Seed setting : slow and reproducible ]")
+    seed_all(2001)
+else:
+    print("[ Seed setting : fast and random ]")
+    seed_some(2001)
 
 ###########################################################
 # Define dataset
