@@ -9,7 +9,7 @@ import cv2
 import copy
 
 MODEL = 'trained_model'
-MODEL_VERSION = '2021.02.25_v2_and_graph_stop'
+MODEL_VERSION = '2021.02.24_and_model'
 
 DATA = 'processed_data'
 TEST = 'test'
@@ -20,7 +20,7 @@ OUTPUT = 'output'
 class ISBI_Dataset_test(Dataset):
 
     def __init__(self, tfms=None):
-        self.fnames = np.array([f'image_{i}.png' for i in range(1,31)])
+        self.fnames = np.array([f'image_{i}.png' for i in range(1,2)])
         self.tfms = tfms
             
     def __len__(self):
@@ -35,8 +35,6 @@ class ISBI_Dataset_test(Dataset):
             img = augmented['image']
 
         img = img/255.0
-        img = np.expand_dims(img, 0)
-        img = torch.from_numpy(img.astype(np.float32, copy=False))  
         return img
 
 
@@ -50,31 +48,38 @@ model.load_state_dict(torch.load(os.path.join(MODEL,MODEL_VERSION,'bst_unet.mode
 model.eval()   # Set model to evaluate mode
 
 test_dataset = ISBI_Dataset_test(tfms=simulation.get_aug_test())
-test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=0)
+# Important to keep batch size equalt to one, as each image gets
+# split into several tiles and is then put back together
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0)
 
-inputs = next(iter(test_loader))
-inputs = inputs.to(device)
+for inputs in test_loader:
 
-pred = model(inputs)
+    inputs = inputs.to(device).numpy()
+    inputs = simulation.crop(inputs)
 
-preds = pred.data.cpu()
-print(preds.shape)
+    pred = model(inputs)
 
-# Create class porbabilities
-preds = preds.softmax(dim = 1).numpy()
+    preds = pred.data.cpu()
+    print(preds.shape)
 
-# Keep probabilities for membrane only
-preds = [pred[1] for pred in preds]
+    # Create class porbabilities
+    preds = preds.softmax(dim = 1).numpy()
 
-for prediction in preds:
-    # Create membrane and background based on probabilities
-    indices_one = prediction >= 0.5
-    indices_zero = prediction < 0.5
-    prediction[indices_one] = 1
-    prediction[indices_zero] = 0
+    # Keep probabilities for membrane only
+    preds = [pred[1] for pred in preds]
 
-for i, mask in enumerate(preds):
-    plt.imshow(mask, cmap='gray')
-    plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
-    plt.show()
-    plt.clf()
+    for prediction in preds:
+        # Create membrane and background based on probabilities
+        indices_one = prediction >= 0.5
+        indices_zero = prediction < 0.5
+        prediction[indices_one] = 1
+        prediction[indices_zero] = 0
+
+    print(type(preds))
+    print(preds.shape)
+    #mask = stitch(preds)
+
+    #plt.imshow(mask, cmap='gray')
+    #plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
+    #plt.show()
+    #plt.clf()
