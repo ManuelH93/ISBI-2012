@@ -189,6 +189,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
             if phase == 'train':
+                scheduler.step()
                 for param_group in optimizer.param_groups:
                     print("LR", param_group['lr'])
                     
@@ -225,9 +226,9 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
             epoch_loss = metrics['loss'] / epoch_samples
            
             # collect statistics for figure and take lr step
-            if phase == 'train':
+            #if phase == 'train':
                 #train_loss.append(metrics['loss']/epoch_samples)
-                scheduler.step()
+                #scheduler.step()
             #else:
             #    val_loss.append(metrics['loss']/epoch_samples)
 
