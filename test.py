@@ -76,7 +76,9 @@ for inputs in test_loader:
         prediction[indices_zero] = 0
 
     print(type(preds))
-    print(preds.shape)
+    print(len(preds))
+    print(type(preds[0]))
+    print(preds[0].shape)
     #mask = stitch(preds)
 
     #plt.imshow(mask, cmap='gray')
