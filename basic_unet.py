@@ -62,7 +62,7 @@ else:
 class ISBI_Dataset(Dataset):
 
     def __init__(self, train = True, tfms=None):
-        self.fnames = ids[:split] if train else ids[split:] # //MH: No longer shuffle and split data
+        self.fnames = ids
         self.tfms = tfms
             
     def __len__(self):
@@ -314,7 +314,7 @@ class ISBI_Dataset_test(Dataset):
 
         img = img/255.0
         img = np.expand_dims(img, 0)
-        img = torch.from_numpy(img.astype(np.float32, copy=False))        
+        img = torch.from_numpy(img.astype(np.float32, copy=False))  
         return img
 
 model.eval()   # Set model to evaluate mode
