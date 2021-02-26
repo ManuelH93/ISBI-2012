@@ -175,21 +175,20 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
     early_stopping = False
 
     # for figure
-    #epochs = []
-    #train_loss = []
-    #val_loss = []
+    epochs = []
+    train_loss = []
+    val_loss = []
 
     for epoch in range(num_epochs):
         print('-' * 10)
         print('Epoch {}/{}'.format(epoch + 1, num_epochs))
-        #epochs.append(epoch+1)
+        epochs.append(epoch+1)
         
         since = time.time()
 
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
             if phase == 'train':
-                scheduler.step()
                 for param_group in optimizer.param_groups:
                     print("LR", param_group['lr'])
                     
@@ -226,11 +225,11 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
             epoch_loss = metrics['loss'] / epoch_samples
            
             # collect statistics for figure and take lr step
-            #if phase == 'train':
-                #train_loss.append(metrics['loss']/epoch_samples)
-                #scheduler.step()
-            #else:
-            #    val_loss.append(metrics['loss']/epoch_samples)
+            if phase == 'train':
+                train_loss.append(metrics['loss']/epoch_samples)
+                scheduler.step()
+            else:
+                val_loss.append(metrics['loss']/epoch_samples)
 
             # deep copy the model
             if phase == 'val' and epoch_loss < best_loss:
@@ -253,15 +252,15 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
     print('Best val loss: {:4f}'.format(best_loss))
 
     # Save loss figure
-    #plt.plot(epochs, train_loss, color='g', label = 'train')
-    #plt.plot(epochs, val_loss, color='orange', label = 'test')
-    #plt.xlabel('Epochs')
-    #plt.ylabel('Loss')
-    #plt.title('Losses')
-    #plt.legend(loc="upper left")
+    plt.plot(epochs, train_loss, color='g', label = 'train')
+    plt.plot(epochs, val_loss, color='orange', label = 'test')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Losses')
+    plt.legend(loc="upper left")
     #plt.show()
-    #plt.savefig(os.path.join(OUTPUT, 'losses.png'))
-    #plt.clf()
+    plt.savefig(os.path.join(OUTPUT, 'losses.png'))
+    plt.clf()
 
     # load best model weights
     model.load_state_dict(best_model_wts)
