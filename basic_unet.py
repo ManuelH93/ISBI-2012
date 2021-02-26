@@ -95,19 +95,19 @@ class ISBI_Dataset(Dataset):
 #ds = ISBI_Dataset(tfms = simulation.get_aug_train())
 #dl = DataLoader(ds,batch_size=4)
 #imgs,masks = next(iter(dl))
-#print(imgs.shape)
-#print(masks.shape)
+#print(imgs.shape, masks.shape)
+#print(imgs.dtype, masks.dtype)
+#for x in [imgs.numpy(), masks.numpy()]:
+#    print(x.min(), x.max(), x.mean(), x.std())
 
 # Convert tensors back to arrays
 
 #imgs = imgs.numpy()
-#imgs = np.squeeze(imgs)
 #masks = masks.numpy()
-#masks = [simulation.twod_to_oned(mask) for mask in masks]
-# MH// Remove twod_to_one
+#masks = [mask[1] for mask in masks]
 
 #for image, mask in zip(imgs,masks):
-#    plt.imshow(image, cmap='gray')
+#    plt.imshow(np.squeeze(image), cmap='gray')
 #    plt.show()
 #    plt.clf()
 #    plt.imshow(mask, cmap='gray')
@@ -172,7 +172,7 @@ def print_metrics(metrics, epoch_samples, phase):
     for k in metrics.keys():
         outputs.append("{}: {:4f}".format(k, metrics[k] / epoch_samples))
         
-    print("{}: {}".format(phase, ", ".join(outputs)))    
+    print("{}: {}".format(phase, ", ".join(outputs)))  
 
 ###########################################################
 # Define training
