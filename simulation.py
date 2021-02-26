@@ -1,5 +1,4 @@
 import numpy as np
-import os
 import albumentations as A
 import cv2
 import copy
@@ -14,12 +13,6 @@ def oned_to_twod(image):
     image[indices_zero] = 1
     mask = np.concatenate((image, membrane), axis=0)
     return mask
-
-def twod_to_oned(image):
-    membrane = image[1]
-    return membrane
-
-# //MH: remove twod_to_oned
 
 def get_aug_train(p=1.0):
     return A.Compose([
