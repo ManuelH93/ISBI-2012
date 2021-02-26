@@ -11,7 +11,6 @@ from torchvision import transforms, datasets, models
 from torchsummary import summary
 import torch.optim as optim
 from torch.optim import lr_scheduler
-import torch.nn as nn #//MH can be removed
 from collections import defaultdict
 import torch.nn.functional as F
 
