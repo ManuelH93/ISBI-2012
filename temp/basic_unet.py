@@ -172,7 +172,7 @@ def print_metrics(metrics, epoch_samples, phase):
 def train_model(model, optimizer, scheduler, num_epochs=25):
     best_model_wts = copy.deepcopy(model.state_dict())
     best_loss = 1e10
-    early_stopping = False
+    #early_stopping = False
 
     # for figure
     epochs = []
@@ -236,19 +236,19 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
                 print("saving best model")
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
-                epochs_no_improve = 0
-            elif phase == 'val' and epoch_loss >= best_loss:
-                epochs_no_improve += 1
-                if epochs_no_improve == 500:
-                    print('Early stopping!')
-                    early_stopping = True
+                #epochs_no_improve = 0
+            #elif phase == 'val' and epoch_loss >= best_loss:
+            #    epochs_no_improve += 1
+            #    if epochs_no_improve == 500:
+            #        print('Early stopping!')
+            #        early_stopping = True
 
         time_elapsed = time.time() - since
         print('{:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
-        if early_stopping == True:
-            break
-        else:
-            continue
+        #if early_stopping == True:
+        #    break
+        #else:
+        #    continue
     print('Best val loss: {:4f}'.format(best_loss))
 
     # Save loss figure
