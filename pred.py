@@ -6,15 +6,14 @@ import simulation
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-
+import copy
 
 MODEL = 'trained_model'
-MODEL_VERSION = '2021.02.18'
+MODEL_VERSION = '2021.02.24'
 
 DATA = 'processed_data'
 TEST = 'test'
-
-PRED_THRESHOLD = 2
+OUTPUT = 'output'
 
 # Load data
 
@@ -37,8 +36,9 @@ class ISBI_Dataset_test(Dataset):
 
         img = img/255.0
         img = np.expand_dims(img, 0)
-        img = torch.from_numpy(img.astype(np.float32, copy=False))        
+        img = torch.from_numpy(img.astype(np.float32, copy=False))  
         return img
+
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -50,28 +50,31 @@ model.load_state_dict(torch.load(os.path.join(MODEL,MODEL_VERSION,'bst_unet.mode
 model.eval()   # Set model to evaluate mode
 
 test_dataset = ISBI_Dataset_test(tfms=simulation.get_aug_test())
-test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0)
-        
+test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=0)
+
 inputs = next(iter(test_loader))
 inputs = inputs.to(device)
-preds = model(inputs)
 
-preds = preds.data.cpu().numpy()
+pred = model(inputs)
+
+preds = pred.data.cpu()
 print(preds.shape)
 
-# Convert tensors back to arrays
+# Create class porbabilities
+preds = preds.softmax(dim = 1).numpy()
 
-preds = [simulation.twod_to_oned(pred) for pred in preds]
+# Keep probabilities for membrane only
+preds = [pred[1] for pred in preds]
 
 for prediction in preds:
-    # Replace 1s with 0s and 0s with 1s
-    indices_one = prediction >= PRED_THRESHOLD
-    indices_zero = prediction < PRED_THRESHOLD
+    # Create membrane and background based on probabilities
+    indices_one = prediction >= 0.5
+    indices_zero = prediction < 0.5
     prediction[indices_one] = 1
     prediction[indices_zero] = 0
 
-for i,pred in enumerate(preds):
-    plt.imshow(pred, cmap='gray')
-    #plt.savefig(os.path.join(OUTPUT, f'prediction{i+1}.png'))
+for i, mask in enumerate(preds):
+    plt.imshow(mask, cmap='gray')
+    plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
     plt.show()
     plt.clf()
