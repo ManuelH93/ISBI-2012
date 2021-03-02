@@ -24,7 +24,6 @@ test_imgs = np.squeeze(np.dsplit(test_imgs, 30))
 masks = tiff.imread(os.path.join(DATA,'train-labels.tif'))
 masks = masks.transpose(1,2,0)
 masks = np.squeeze(np.dsplit(masks, 30))
-masks = masks
 
 # Save train_images and masks and print image stats
 x_tot,x2_tot = [],[]
