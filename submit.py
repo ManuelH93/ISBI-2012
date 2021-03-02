@@ -38,7 +38,6 @@ class ISBI_Dataset_test(Dataset):
         img = img/255.0
         return img
 
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 

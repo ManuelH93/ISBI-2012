@@ -298,7 +298,7 @@ model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=1000)
 class ISBI_Dataset_test(Dataset):
 
     def __init__(self, tfms=None):
-        self.fnames = np.array([f'image_{i}.png' for i in range(1,31)])
+        self.fnames = np.array([f'image_{i}.png' for i in range(1,4)])
         self.tfms = tfms
             
     def __len__(self):
@@ -313,36 +313,35 @@ class ISBI_Dataset_test(Dataset):
             img = augmented['image']
 
         img = img/255.0
-        img = np.expand_dims(img, 0)
-        img = torch.from_numpy(img.astype(np.float32, copy=False))  
         return img
 
 model.eval()   # Set model to evaluate mode
 
 test_dataset = ISBI_Dataset_test(tfms=simulation.get_aug_test())
-test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, num_workers=0)
+# Important to keep batch size equalt to one, as each image gets
+# split into several tiles and is then put back together
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0)
 
-inputs = next(iter(test_loader))
-inputs = inputs.to(device)
-
-pred = model(inputs)
-preds = pred.data.cpu()
-print(preds.shape)
-
-# Create class porbabilities
-preds = preds.softmax(dim = 1).numpy()
-
-# Keep probabilities for membrane only
-preds = [pred[1] for pred in preds]
-
-for prediction in preds:
+masks = []
+for inputs in test_loader:
+    inputs = inputs.to(device).numpy()
+    inputs = simulation.crop(inputs)
+    preds = model(inputs)
+    preds = preds.data.cpu()
+    # Create class probabilities
+    preds = preds.softmax(dim = 1).numpy()
+    # Keep probabilities for membrane only
+    preds = [pred[1] for pred in preds]
     # Create membrane and background based on probabilities
-    indices_one = prediction >= 0.5
-    indices_zero = prediction < 0.5
-    prediction[indices_one] = 1
-    prediction[indices_zero] = 0
+    for prediction in preds:
+        prediction = simulation.probs_to_mask(prediction)
+    mask = simulation.stitch(preds)
+    masks.append(mask)
 
-for i, mask in enumerate(preds):
+masks = np.array(masks, dtype=np.float32)
+tiff.imsave(os.path.join(OUTPUT,'submission.tif'), masks)
+
+for i, mask in enumerate(masks):
     plt.imshow(mask, cmap='gray')
     plt.savefig(os.path.join(OUTPUT, f'mask_{i}.png'))
     #plt.show()
