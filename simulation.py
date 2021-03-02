@@ -63,3 +63,21 @@ def crop(images):
     all_crops = np.concatenate(all_crops)  
     all_crops = torch.from_numpy(all_crops.astype(np.float32, copy=False))  
     return all_crops
+
+def probs_to_mask(prediction):
+    indices_one = prediction >= 0.5
+    indices_zero = prediction < 0.5
+    prediction[indices_one] = 1
+    prediction[indices_zero] = 0
+    return prediction
+
+def stitch(preds):
+    top_left = preds[0][0:256,0:256]
+    top_right = preds[1][0:256,132:388]
+    bottom_left = preds[2][132:388,0:256]
+    bottom_right = preds[3][132:388,132:388]
+
+    top = np.concatenate((top_left,top_right), axis=1)
+    bottom = np.concatenate((bottom_left,bottom_right), axis=1)
+    mask = np.concatenate((top,bottom), axis=0)
+    return mask
