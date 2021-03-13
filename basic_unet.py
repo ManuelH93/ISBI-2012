@@ -266,8 +266,8 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
     plt.ylabel('Loss')
     plt.title('Losses')
     plt.legend(loc="upper left")
-    #plt.show()
     plt.savefig(os.path.join(OUTPUT, 'losses.png'))
+    #plt.show()
     plt.clf()
 
     # load best model weights
